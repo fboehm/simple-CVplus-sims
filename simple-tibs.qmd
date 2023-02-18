@@ -1,0 +1,78 @@
+---
+title: "Simple simulations analyzed with conformalInference R package"
+author: "Fred Boehm"
+date: "February 15, 2023"
+format:
+  gfm:
+    toc: true
+    number-sections: true
+---
+
+```{r}
+remotes::install_github(repo="ryantibs/conformal", subdir="conformalInference")
+```
+
+
+## Goal
+
+The goal here is to examine the CV+ interval widths as a function of sample size in 
+a very simple simulations setting.
+
+## Approach
+
+We'll simulate a x vector, then simulate y|x for 101,000 subjects.
+We then hold out the 1000 test set subjects, which are randomly chosen from the
+101,000.
+
+The remaining 100,000 constitute the training set. We do CV+ (5-fold) with them, then
+construct prediction intervals for the predicted values.
+
+We also do an analysis with exactly 10,000 training set subjects. That is, we 
+do CV+, 5-fold, with the 10,000 subjects before constructing intervals for the 
+test set.
+
+```{r}
+set.seed(2023-02-16)
+
+n <- 11000
+x <- rnorm(n = n)
+b <- 10
+epsilon <- rnorm(n = n)
+y <- x * b + epsilon
+dat_all <- tibble::tibble(id = 1:n,
+               x = x,
+               y = y
+               )
+```
+
+We now sample 1000 test subjects.
+
+```{r}
+library(magrittr)
+test_ids <- sample(x = dat_all$id, size = 1000)
+dat_test <- dat_all %>%
+              dplyr::filter(id %in% test_ids)
+dat_training_pre <- dat_all %>%
+                  dplyr::filter(!(id %in% test_ids))
+```
+
+```{r}
+## define pred.fun function
+
+pf <- function(out, newx){
+    design_mat <- cbind(1, newx)
+    return(design_mat %*% out$coefficients)
+}
+tf <- function(x,y){
+    return(lm(y ~ x))
+}
+
+conformalInference::conformal.pred.jack(x = as.matrix(dat_training_pre$x),
+                                        y = dat_training_pre$y,
+                                        x0 = as.matrix(dat_test$x),
+                                        train.fun = tf,
+                                        predict.fun = pf, 
+                                        plus = TRUE, # JK+ instead of JK
+                                        verbose = TRUE 
+                                        )
+```

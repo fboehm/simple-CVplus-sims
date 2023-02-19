@@ -8,10 +8,13 @@ format:
     number-sections: true
 ---
 
-```{r}
+```{r, eval = FALSE}
 remotes::install_github(repo="ryantibs/conformal", subdir="conformalInference")
 ```
 
+```{r}
+options(future.globals.maxSize= 10 * (2 ^ 10)^3)
+```
 
 ## Goal
 
@@ -34,7 +37,7 @@ test set.
 ```{r}
 set.seed(2023-02-16)
 
-n <- 11000
+n <- 6000
 x <- rnorm(n = n)
 b <- 10
 epsilon <- rnorm(n = n)
@@ -67,7 +70,7 @@ tf <- function(x,y){
     return(lm(y ~ x))
 }
 
-conformalInference::conformal.pred.jack(x = as.matrix(dat_training_pre$x),
+oo <- conformalInference::conformal.pred.jack(x = as.matrix(dat_training_pre$x),
                                         y = dat_training_pre$y,
                                         x0 = as.matrix(dat_test$x),
                                         train.fun = tf,
@@ -75,4 +78,28 @@ conformalInference::conformal.pred.jack(x = as.matrix(dat_training_pre$x),
                                         plus = TRUE, # JK+ instead of JK
                                         verbose = TRUE 
                                         )
+```
+
+```{r}
+oo_smallsample <- conformalInference::conformal.pred.jack(x = as.matrix(dat_training_pre$x[1:1000]),
+                                        y = dat_training_pre$y[1:1000],
+                                        x0 = as.matrix(dat_test$x),
+                                        train.fun = tf,
+                                        predict.fun = pf, 
+                                        plus = TRUE, # JK+ instead of JK
+                                        verbose = TRUE 
+                                        )
+
+```
+
+
+We now assemble the output objects into tibbles for easy manipulation.
+
+```{r}
+results <- oo[- 4] %>%
+    dplyr::bind_cols() %>%
+    tibble::as_tibble() %>%
+    dplyr::rename(pred = 1, lower = 2, upper = 3) %>%
+    dplyr::mutate(y = dat_test$y) %>%
+    dplyr::mutate(in_interval = y <= upper & y >= lower) 
 ```

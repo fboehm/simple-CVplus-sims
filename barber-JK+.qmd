@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Barber's Simulation Code"
 format: gfm
 ---
 

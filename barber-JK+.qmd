@@ -1,6 +1,6 @@
 ---
 title: "Untitled"
-format: html
+format: gfm
 ---
 
 Here we paste the code from Barber's file, 
@@ -167,7 +167,7 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
     
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 # simulation
-n = 100; 
+n = 1000; 
 n1 = 100
 SNR = 10
 ntrial = 50
@@ -199,7 +199,7 @@ for d in dim_vals:
             width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
             results.loc[len(results)]=[itrial,d,method,coverage,width]
 
-results.to_csv('jackknife_simulation_results.csv',index=False)
+results.to_csv('jackknife_simulation_results-' + str(n) + '.csv',index=False)
 # plot simulation results
 plt.rcParams.update({'font.size': 14})
 

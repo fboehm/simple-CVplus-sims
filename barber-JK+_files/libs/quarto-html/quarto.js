@@ -33,9 +33,12 @@ window.document.addEventListener("DOMContentLoaded", function (_event) {
     tab.addEventListener("shown.bs.tab", fireSlideEnter);
   });
 
+<<<<<<< HEAD
   // fire slideEnter for tabby tab activations (for htmlwidget resize behavior)
   document.addEventListener("tabby", fireSlideEnter, false);
 
+=======
+>>>>>>> de4574e3103a3cf0188b081be904bb9a38cf1015
   // Track scrolling and mark TOC links as active
   // get table of contents and sidebar (bail if we don't have at least one)
   const tocLinks = tocEl
@@ -423,6 +426,7 @@ window.document.addEventListener("DOMContentLoaded", function (_event) {
   const marginChildren = window.document.querySelectorAll(
     ".column-margin.column-container > * "
   );
+<<<<<<< HEAD
 
   nexttick(() => {
     let lastBottom = 0;
@@ -438,6 +442,20 @@ window.document.addEventListener("DOMContentLoaded", function (_event) {
       lastBottom = top + marginChild.getBoundingClientRect().height + marginTop;
     }
   });
+=======
+  let lastBottom = 0;
+  for (const marginChild of marginChildren) {
+    const top = marginChild.getBoundingClientRect().top;
+    if (top < lastBottom) {
+      const margin = lastBottom - top;
+      marginChild.style.marginTop = `${margin}px`;
+    }
+    const styles = window.getComputedStyle(marginChild);
+    const marginTop = parseFloat(styles["marginTop"]);
+
+    lastBottom = top + marginChild.getBoundingClientRect().height + marginTop;
+  }
+>>>>>>> de4574e3103a3cf0188b081be904bb9a38cf1015
 
   // Manage the visibility of the toc and the sidebar
   const marginScrollVisibility = manageSidebarVisiblity(marginSidebarEl, {
@@ -764,7 +782,10 @@ function throttle(func, wait) {
     }
   };
 }
+<<<<<<< HEAD
 
 function nexttick(func) {
   return setTimeout(func, 0);
 }
+=======
+>>>>>>> de4574e3103a3cf0188b081be904bb9a38cf1015

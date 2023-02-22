@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "CV+ simulations with Barber's python code"
 format: html
 ---
 
@@ -74,7 +74,7 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
 
     ###############################
     # CV+
-    ###############################
+    #################Ddn7G@97fXaCnsuATez##############
 
     K = 10
     n_K = np.floor(n/K).astype(int)
@@ -167,12 +167,13 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
     
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 # simulation
-n = 100; 
-n1 = 100
+n = 10000; # training set size
+n1 = 100 # test set size
 SNR = 10
 ntrial = 50
 alpha = 0.1
-dim_vals = np.arange(5,205,5)
+#dim_vals = np.arange(5,205,5)
+dim_vals = np.arange(1,2,1)
 
 if(run_full_CP):
     method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split', 'full']
@@ -199,7 +200,7 @@ for d in dim_vals:
             width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
             results.loc[len(results)]=[itrial,d,method,coverage,width]
 
-results.to_csv('jackknife_simulation_results.csv',index=False)
+results.to_csv('jackknife_simulation_results-10000.csv',index=False)
 # plot simulation results
 plt.rcParams.update({'font.size': 14})
 

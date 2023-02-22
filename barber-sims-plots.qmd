@@ -31,10 +31,13 @@ small_dat <- vroom::vroom(small_file, col_names = TRUE) %>%
 
 ```{r}
 library(ggplot2)
-big_dat %>%
+dd <- big_dat %>%
     dplyr::bind_rows(small_dat) %>%
-    dplyr::filter(method == "CV+") %>%
-    
+    dplyr::filter(method == "CV+") 
+dd %>%
+    ggplot() + geom_point(aes(x = width, y = coverage, group = training_sample_size, colour = as.factor(training_sample_size)))
+ggsave("figures/barber-scatter-coverage-width-100-1000.png")
+ggsave("figures/barber-scatter-coverage-width-100-1000.svg")
 
 ```
 

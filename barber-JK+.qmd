@@ -1,11 +1,28 @@
 ---
 title: "Untitled"
-format: html
+format: gfm
+jupyter: python3
 ---
+
+```{python}
+import sys
+print(sys.executable)
+```
+
+
 
 Here we paste the code from Barber's file, 
 
-```{python}
+```{python, eval = FALSE}
+import subprocess
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+install("nbformat")
+```
+
+
+```{python, eval = FALSE}
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -172,7 +189,8 @@ n1 = 100
 SNR = 10
 ntrial = 50
 alpha = 0.1
-dim_vals = np.arange(5,205,5)
+#dim_vals = np.arange(5,205,5)
+dim_vals = np.arange(1,5,1)
 
 if(run_full_CP):
     method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split', 'full']
@@ -218,16 +236,70 @@ plt.show()
 
 plt.axhline(1-alpha,linestyle='dashed',c='k')
 for method in method_names:
+    width_mean = results[results['method']==method].groupby('d')['width'].mean()
+    width_SE = results[results['method']==method].groupby('d')['width'].std()/np.sqrt(ntrial)
+    plt.plot(dim_vals,width_mean,label=method)
+    plt.fill_between(dim_vals,width_mean-width_SE,width_mean+width_SE,alpha = 0.25)
+plt.ylim(0,20)
+plt.xlabel('Dimension d')
+plt.ylabel('Interval width')
+plt.savefig('jackknife_simulation_width_zoomin.png',dpi=400,bbox_inches='tight')
+plt.show()
+```
+
+```{python, eval = FALSE}
+# simulation
+n = 1000; # training set size
+n1 = 100 # test sample size
+SNR = 10
+ntrial = 50
+alpha = 0.1
+#dim_vals = np.arange(5,205,5)
+dim_vals = np.arange(1,5,1)
+
+if(run_full_CP):
+    method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split', 'full']
+else:
+    method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split']
+
+results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+for d in dim_vals:
+    for itrial in range(ntrial):
+        beta = np.random.normal(size=d)
+        beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
+        X = np.random.normal(size=(n,d))
+        Y = X.dot(beta) + np.random.normal(size=n)
+        
+        min_Y = Y.min() - 0.1 * (Y.max()-Y.min())
+        max_Y = Y.max() + 0.1 * (Y.max()-Y.min())
+        
+        X1 = np.random.normal(size=(n1,d))
+        Y1 = X1.dot(beta) + np.random.normal(size=n1)
+        
+        PIs = compute_PIs(X,Y,X1,alpha,leastsq_minL2, min_Y, max_Y, run_full_CP)
+        for method in method_names:
+            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+            results.loc[len(results)]=[itrial,d,method,coverage,width]
+
+results.to_csv('jackknife_simulation_results-n1000.csv',index=False)
+# plot simulation results
+plt.rcParams.update({'font.size': 14})
+
+plt.axhline(1-alpha,linestyle='dashed',c='k')
+for method in method_names:
     coverage_mean = results[results['method']==method].groupby('d')['coverage'].mean()
     coverage_SE = results[results['method']==method].groupby('d')['coverage'].std()\
         /np.sqrt(ntrial)
     plt.plot(dim_vals,coverage_mean,label=method)
     plt.fill_between(dim_vals,coverage_mean-coverage_SE,coverage_mean+coverage_SE,alpha = 0.25)
-plt.ylim(0.8,1.0)
 plt.xlabel('Dimension d')
 plt.ylabel('Coverage')
-plt.savefig('jackknife_simulation_coverage_zoomin.png',dpi=400,bbox_inches='tight')
+plt.legend()
+plt.savefig('jackknife_simulation_coverage-n1000.png',dpi=400,bbox_inches='tight')
 plt.show()
+
+plt.axhline(1-alpha,linestyle='dashed',c='k')
 
 for method in method_names:
     width_mean = results[results['method']==method].groupby('d')['width'].mean()
@@ -237,17 +309,6 @@ for method in method_names:
 plt.xlabel('Dimension d')
 plt.ylabel('Interval width')
 plt.legend()
-plt.savefig('jackknife_simulation_width.png',dpi=400,bbox_inches='tight')
-plt.show()
-
-for method in method_names:
-    width_mean = results[results['method']==method].groupby('d')['width'].mean()
-    width_SE = results[results['method']==method].groupby('d')['width'].std()/np.sqrt(ntrial)
-    plt.plot(dim_vals,width_mean,label=method)
-    plt.fill_between(dim_vals,width_mean-width_SE,width_mean+width_SE,alpha = 0.25)
-plt.ylim(0,20)
-plt.xlabel('Dimension d')
-plt.ylabel('Interval width')
-plt.savefig('jackknife_simulation_width_zoomin.png',dpi=400,bbox_inches='tight')
+plt.savefig('jackknife_simulation_width-n1000.png',dpi=400,bbox_inches='tight')
 plt.show()
 ```

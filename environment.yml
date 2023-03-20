@@ -1,0 +1,8 @@
+name: barber1
+dependencies:
+  - numpy
+  - pandas
+  - matplotlib
+  - jupyter
+  - nbformat
+

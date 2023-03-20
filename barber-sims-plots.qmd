@@ -1,0 +1,43 @@
+---
+title: "Plotting results from simulations with Barber's python code"
+author: "Fred Boehm"
+date: "February 19, 2023"
+format: "gfm"
+---
+
+## Goal
+
+Goal is to examine the results from the simulations done with 
+Barber's python code. I'll read the results csv files into R, 
+then create plots for interval widths.
+Note also that Barber used 50 replicates per setting in her
+simulations.
+
+## R code for plots
+
+I have two results files, one for each of the two training set
+sample sizes, 100 and 1000.
+Both have test set sizes of 100.
+
+```{r}
+library(magrittr)
+big_file <- "jackknife_simulation_results-1000.csv"
+big_dat <- vroom::vroom(big_file, col_names = TRUE) %>%
+                dplyr::mutate(training_sample_size = 1000)
+small_file <- "jackknife_simulation_results-100.csv"
+small_dat <- vroom::vroom(small_file, col_names = TRUE) %>%
+                dplyr::mutate(training_sample_size = 100)
+```
+
+```{r}
+library(ggplot2)
+dd <- big_dat %>%
+    dplyr::bind_rows(small_dat) %>%
+    dplyr::filter(method == "CV+") 
+dd %>%
+    ggplot() + geom_point(aes(x = width, y = coverage, group = training_sample_size, colour = as.factor(training_sample_size)))
+ggsave("figures/barber-scatter-coverage-width-100-1000.png")
+ggsave("figures/barber-scatter-coverage-width-100-1000.svg")
+
+```
+

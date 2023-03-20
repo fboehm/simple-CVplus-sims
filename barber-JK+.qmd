@@ -189,6 +189,10 @@ else:
 ```
 
 ```{python}
+X1 = np.random.normal(size=(n1,d))
+Y1 = X1.dot(beta) + np.random.normal(size=n1)
+
+
 for n in n_vals:
     results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
     for d in dim_vals:
@@ -201,8 +205,6 @@ for n in n_vals:
             min_Y = Y.min() - 0.1 * (Y.max()-Y.min())
             max_Y = Y.max() + 0.1 * (Y.max()-Y.min())
             
-            X1 = np.random.normal(size=(n1,d))
-            Y1 = X1.dot(beta) + np.random.normal(size=n1)
             
             PIs = compute_PIs(X,Y,X1,alpha,leastsq_minL2, min_Y, max_Y, run_full_CP)
             for method in method_names:

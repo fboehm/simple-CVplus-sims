@@ -52,15 +52,20 @@ compute_PIs <- function(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y) {
     
     K <- 10
     n_K <- floor(n/K)
-    base_inds_to_delete <- seq_len(n_K) - 1
+    #base_inds_to_delete <- seq_len(n_K) - 1
+    base_inds_to_delete <- seq_len(n_K)
     resids_LKO <- numeric(n)
     muh_LKO_vals_testpoint <- matrix(0, n, n1)
     for (i in 1:K) {
         inds_to_delete <- base_inds_to_delete + n_K*(i-1)
-        muh_vals_LKO <- fit_muh_fun(X[-inds_to_delete,], Y[-inds_to_delete], rbind(X[inds_to_delete,], X1))
-        resids_LKO[inds_to_delete+1] <- abs(Y[inds_to_delete+1] - muh_vals_LKO[1:n_K])
+        muh_vals_LKO <- fit_muh_fun(X = X[-inds_to_delete,], 
+                                    Y = Y[-inds_to_delete], 
+                                    X1 = rbind(X[inds_to_delete, , drop = FALSE], X1))
+        #resids_LKO[inds_to_delete+1] <- abs(Y[inds_to_delete+1] - muh_vals_LKO[1:n_K])
+        resids_LKO[inds_to_delete] <- abs(Y[inds_to_delete] - muh_vals_LKO[1:n_K])
         for (inner_K in 1:n_K) {
-            muh_LKO_vals_testpoint[inds_to_delete[inner_K]+1,] <- muh_vals_LKO[(n_K+1):(n+1),]
+            #muh_LKO_vals_testpoint[inds_to_delete[inner_K]+1,] <- muh_vals_LKO[(n_K+1):(n+1),]
+            muh_LKO_vals_testpoint[inds_to_delete[inner_K], ] <- muh_vals_LKO[- (1:n_K), ]
         }
     }
     ind_Kq <- ceiling((1-alpha)*(n+1))
@@ -73,7 +78,7 @@ compute_PIs <- function(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y) {
     n_half <- floor(n/2)
     idx_train <- idx[seq_len(n_half)]
     idx_cal <- idx[(n_half+1):n]
-    muh_split_vals <- fit_muh_fun(X[idx_train,], Y[idx_train], rbind(X[idx_cal,], X1))
+    muh_split_vals <- fit_muh_fun(X[idx_train,], Y[idx_train], rbind(X[idx_cal, , drop = FALSE], X1))
     resids_split <- abs(Y[idx_cal] - muh_split_vals[1:(n-n_half)])
     muh_split_vals_testpoint <- muh_split_vals[(n-n_half+1):(n+n1-n_half)]
     ind_split <- ceiling((1-alpha)*(n-n_half+1))
@@ -153,7 +158,7 @@ for (n in n_vals) {
         }
     }
     
-    write.csv(results, file=paste0('jackknife_simulation_results-', n, '.csv'), row.names=FALSE)
+    write.csv(results, file=here::here("results", paste0('jackknife_simulation_results-', n, '.csv')), row.names=FALSE)
 }
 
 

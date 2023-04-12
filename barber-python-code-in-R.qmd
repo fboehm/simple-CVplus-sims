@@ -1,0 +1,160 @@
+---
+title: "Translating Barber python code to R"
+format: html
+---
+
+```{r setup}
+library(magrittr)
+set.seed(98765)
+TOL <- 10 ^-8
+# first function
+leastsq_minL2 <- function(X, Y, X1, tol=TOL) {
+    svd_X <- svd(X)
+    uX <- svd_X$u
+    dX <- svd_X$d
+    vX <- svd_X$v
+    rX <- sum(dX >= dX[1] * tol)
+    betahat <- vX[1:rX, ] %*% t(uX[, 1:rX]) %*% Y / dX[1:rX]
+    return(X1 %*% betahat)
+}
+
+```
+
+```{r}
+
+
+compute_PIs <- function(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y) {
+  
+    n <- length(Y)
+    n1 <- nrow(X1)
+    
+    ###############################
+    # Naive & jackknife/jack+/jackmm
+    ###############################
+    
+    muh_vals <- fit_muh_fun(X,Y,rbind(X,X1)) %>% as.vector()
+    
+    resids_naive <- abs(Y - muh_vals[1:n])
+    muh_vals_testpoint <- muh_vals[(n+1):(n+n1)]
+    
+    resids_LOO <- numeric(n)
+    muh_LOO_vals_testpoint <- matrix(0, n, n1)
+    for (i in 1:n) {
+        muh_vals_LOO <- fit_muh_fun(X[-i,], Y[-i], rbind(X[i,], X1))
+        resids_LOO[i] <- abs(Y[i] - muh_vals_LOO[1])
+        muh_LOO_vals_testpoint[i,] <- muh_vals_LOO[2:(n1+1)]
+    }
+    ind_q <- ceiling((1-alpha)*(n+1))
+    
+    ###############################
+    # CV+
+    ###############################
+    
+    K <- 10
+    n_K <- floor(n/K)
+    base_inds_to_delete <- seq_len(n_K) - 1
+    resids_LKO <- numeric(n)
+    muh_LKO_vals_testpoint <- matrix(0, n, n1)
+    for (i in 1:K) {
+        inds_to_delete <- base_inds_to_delete + n_K*(i-1)
+        muh_vals_LKO <- fit_muh_fun(X[-inds_to_delete,], Y[-inds_to_delete], rbind(X[inds_to_delete,], X1))
+        resids_LKO[inds_to_delete+1] <- abs(Y[inds_to_delete+1] - muh_vals_LKO[1:n_K])
+        for (inner_K in 1:n_K) {
+            muh_LKO_vals_testpoint[inds_to_delete[inner_K]+1,] <- muh_vals_LKO[(n_K+1):(n+1),]
+        }
+    }
+    ind_Kq <- ceiling((1-alpha)*(n+1))
+    
+    ###############################
+    # split conformal
+    ###############################
+    
+    idx <- sample(seq_len(n))
+    n_half <- floor(n/2)
+    idx_train <- idx[seq_len(n_half)]
+    idx_cal <- idx[(n_half+1):n]
+    muh_split_vals <- fit_muh_fun(X[idx_train,], Y[idx_train], rbind(X[idx_cal,], X1))
+    resids_split <- abs(Y[idx_cal] - muh_split_vals[1:(n-n_half)])
+    muh_split_vals_testpoint <- muh_split_vals[(n-n_half+1):(n+n1-n_half)]
+    ind_split <- ceiling((1-alpha)*(n-n_half+1))
+    
+    ###############################
+    # construct prediction intervals
+    ###############################
+    
+    PIs_dict <- list(
+    naive = data.frame(
+        lower = muh_vals_testpoint - sort(resids_naive)[ind_q-1],
+        upper = muh_vals_testpoint + sort(resids_naive)[ind_q-1]
+    ),
+    jackknife = data.frame(
+        lower = muh_vals_testpoint - sort(resids_LOO)[ind_q-1],
+        upper = muh_vals_testpoint + sort(resids_LOO)[ind_q-1]
+    ),
+    jackknife.plus = data.frame(
+        lower = apply(sort(muh_LOO_vals_testpoint - resids_LOO), 2, tail, n = ind_q)[1,],
+        upper = apply(sort(muh_LOO_vals_testpoint + resids_LOO), 2, head, n = ind_q)[1,]
+    ),
+    jackknife.mm = data.frame(
+        lower = apply(muh_LOO_vals_testpoint, 2, min) - sort(resids_LOO)[ind_q-1],
+        upper = apply(muh_LOO_vals_testpoint, 2, max) + sort(resids_LOO)[ind_q-1]
+    ),
+    CV.plus = data.frame(
+        lower = apply(sort(muh_LKO_vals_testpoint - resids_LKO), 2, tail, n = ind_Kq)[1,],
+        upper = apply(sort(muh_LKO_vals_testpoint + resids_LKO), 2, head, n = ind_Kq)[1,]
+    ),
+    split = data.frame(
+        lower = muh_split_vals_testpoint - sort(resids_split)[ind_split-1],
+        upper = muh_split_vals_testpoint + sort(resids_split)[ind_split-1]
+    )
+    )
+    PIs_df <- do.call(cbind, lapply(PIs_dict, function(x) data.frame(lower=x$lower, upper=x$upper)))
+    colnames(PIs_df) <- names(PIs_dict)
+    return(PDs_df)
+}
+
+
+```
+
+
+```{r sims}
+n_vals <- c(100, 1000, 10000)
+n1 = 100
+SNR = 10
+ntrial = 50
+alpha = 0.1
+d = 1
+method_names <- c("naive", "jackknife", "jackknife.plus", "jackknife.mm", "CV.plus", "split")
+beta <- rnorm(d)
+beta <- beta / sqrt(sum(beta^2)) * sqrt(SNR)
+X1 <- matrix(rnorm(n1 * d), ncol = d)
+Y1 <- X1 %*% beta + rnorm(n1)
+for (n in n_vals) {
+    results <- data.frame(itrial=numeric(),
+                            d=numeric(),
+                            method=character(),
+                            coverage=numeric(),
+                            width=numeric(),
+                            stringsAsFactors=FALSE)
+    
+    for (itrial in 1:ntrial) {
+        X <- matrix(rnorm(n*d), nrow=n, ncol=d)
+        Y <- X %*% beta + rnorm(n)
+        
+        min_Y <- min(Y) - 0.1 * (max(Y) - min(Y))
+        max_Y <- max(Y) + 0.1 * (max(Y) - min(Y))
+        
+        PIs <- compute_PIs(X, Y, X1, alpha, leastsq_minL2, min_Y, max_Y)
+        
+        for (method in method_names) {
+            coverage <- mean(PIs[[method]]$lower <= Y1 & PIs[[method]]$upper >= Y1)
+            width <- mean(PIs[[method]]$upper - PIs[[method]]$lower)
+            results <- rbind(results, data.frame(itrial=itrial, d=d, method=method, coverage=coverage, width=width))
+        }
+    }
+    
+    write.csv(results, file=paste0('jackknife_simulation_results-', n, '.csv'), row.names=FALSE)
+}
+
+
+```

@@ -8,38 +8,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 np.random.seed(98765)
-run_full_CP = False
-# flag for whether to run full conformal prediction
-# requires the nonconformist library
 
 TOL = 1e-8
 
-######################################
-# Define regression algorithm (for full conformal)
-######################################
-if(run_full_CP):
-    from nonconformist.nc import RegressorNormalizer
-    from nonconformist.nc import AbsErrorErrFunc
-    from nonconformist.base import RegressorAdapter
-    from nonconformist.nc import RegressorNc
-    from nonconformist.cp import IcpRegressor
-
-    class leastsq_minL2_wrapper(RegressorAdapter):
-
-        def __init__(self, model=None, fit_params=None, tol=TOL):
-            super(leastsq_minL2_wrapper, self).__init__(model, fit_params)
-            self.betahat = 0
-            self.tol = tol
-            
-        def fit(self, x, y):
-            uX,dX,vX = np.linalg.svd(x)
-            rX = (dX>=dX[0]*self.tol).sum()
-            self.betahat = (vX[:rX].T/dX[:rX]).dot(uX[:,:rX].T.dot(y))
-        
-        def predict(self, x):
-            return x.dot(self.betahat)
-        
-        
 ######################################
 # Define regression algorithm (for all other methods)
 ######################################
@@ -129,7 +100,9 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
                             columns = ['lower','upper'])}
 
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
+```
 
+```{python}
 # simulation
 n_vals = np.array([100, 1000, 10000]) # training set size
 n1 = 100 # test set size

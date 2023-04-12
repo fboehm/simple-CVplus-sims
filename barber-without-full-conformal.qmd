@@ -1,12 +1,7 @@
 ---
-title: "CV+ simulations with Barber's python code"
+title: "Untitled"
 format: html
 ---
-
-
-
-
-
 
 ```{python}
 import numpy as np
@@ -105,35 +100,6 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
 
     
     ###############################
-    # Full Conformal
-    ###############################
-    if(run_full_CP):
-        y_num = 300
-        y_trial_vec = np.linspace(min_Y,max_Y,num=y_num)
-        full_predictions = np.zeros((n1,2))
-        full_C = []
-        for i in range(n1):
-            pi_y = np.zeros(y_num)
-            C = []
-            for j in range(y_num):
-                y_trial = y_trial_vec[j]
-                X_aug = np.r_[X1[i].reshape((1,-1)),X]
-                Y_aug = np.r_[y_trial,Y]
-                
-                muh_vals_full = fit_muh_fun(X_aug,Y_aug,X_aug)
-                resids_full = np.abs(Y_aug - muh_vals_full)
-                
-                pi_y = (1+np.sum(resids_full[1:]<=resids_full[0])) / (n+1)
-                if (n+1)*pi_y <= np.ceil( (1-alpha)*(n+1) ):
-                    C.append(y_trial)
-        
-            if len(C)>0:
-                full_predictions[i,0] = min(C)
-                full_predictions[i,1] = max(C)
-        
-            full_C.append(C)
-    
-    ###############################
     # construct prediction intervals
     ###############################
 
@@ -162,10 +128,6 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
                            muh_split_vals_testpoint + np.sort(resids_split)[ind_split-1]],\
                             columns = ['lower','upper'])}
 
-    if(run_full_CP):
-        PIs_dict['full'] = pd.DataFrame(np.c_[full_predictions[:,0], full_predictions[:,1]],\
-                           columns = ['lower','upper'])
-    
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 
 # simulation
@@ -176,10 +138,8 @@ ntrial = 50
 alpha = 0.1
 #dim_vals = np.arange(5,205,5)
 d = 1
-if(run_full_CP):
-    method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split', 'full']
-else:
-    method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split']
+
+method_names = ['naive','jackknife','jackknife+','jackknife-mm','CV+','split']
 beta = np.random.normal(size=d)
 beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
 X1 = np.random.normal(size=(n1,d))
@@ -203,31 +163,4 @@ for n in n_vals:
             results.loc[len(results)]=[itrial,d,method,coverage,width]
 
     results.to_csv('jackknife_simulation_results-' + str(n) + '.csv',index=False)
-    # plot simulation results
- #   plt.rcParams.update({'font.size': 14})
-
-#    plt.axhline(1-alpha,linestyle='dashed',c='k')
-#    for method in method_names:
-#        coverage_mean = results[results['method']==method].groupby('d')['coverage'].mean()
-#        coverage_SE = results[results['method']==method].groupby('d')['coverage'].std()\
-#            /np.sqrt(ntrial)
-#        plt.plot(dim_vals,coverage_mean,label=method)
-#        plt.fill_between(dim_vals,coverage_mean-coverage_SE,coverage_mean+coverage_SE,alpha = 0.25)
-#    plt.xlabel('Dimension d')
-#    plt.ylabel('Coverage')
-#    plt.legend()
-#    plt.savefig('jackknife_simulation_coverage-' + str(n) + '.png',dpi=400,bbox_inches='tight')
-#    plt.show()
-
-#    plt.axhline(1-alpha,linestyle='dashed',c='k')
-#    for method in method_names:
-#        width_mean = results[results['method']==method].groupby('d')['width'].mean()
-#        width_SE = results[results['method']==method].groupby('d')['width'].std()/np.sqrt(ntrial)
-#        plt.plot(dim_vals,width_mean,label=method)
-#        plt.fill_between(dim_vals,width_mean-width_SE,width_mean+width_SE,alpha = 0.25)
-#    plt.ylim(0,20)
-#    plt.xlabel('Dimension d')
-#    plt.ylabel('Interval width')
-#    plt.savefig('jackknife_simulation_width_zoomin-' + str(n) + '.png',dpi=400,bbox_inches='tight')
-#    plt.show()
 ```

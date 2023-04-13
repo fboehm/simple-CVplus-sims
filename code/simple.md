@@ -50,7 +50,7 @@ dat_all <- tibble::tibble(id = 1:n,
                )
 ```
 
-We now sample 1000 test subjects.
+We now sample `t n_test` test subjects.
 
 ``` r
 library(magrittr)
@@ -61,9 +61,6 @@ dat_training_pre <- dat_all %>%
                   dplyr::filter(!(id %in% test_ids))
 ```
 
-We then partition the 10,000 training set samples into five subsets of
-2,000 each.
-
 ``` r
 n_folds <- 5
 training_ids_shuffled <- sample(x = dat_training_pre$id, size = n_training)
@@ -72,6 +69,9 @@ dat_training <- tibble::tibble(id = training_ids_shuffled, fold = folds) %>%
                   dplyr::left_join(dat_training_pre, by = "id") %>%
                   dplyr::arrange(id)
 ```
+
+We then partition the 10^{4} training set samples into five subsets of
+2000 each.
 
 We then regress y on x with 5-fold CV.
 
@@ -95,8 +95,8 @@ pred <- predvals %>%
           dplyr::mutate(absolute_residual = abs(y - predicted))
 ```
 
-Now, we have the five functions that are needed to get the five
-predicted values per test set subject.
+Now, we have the 5 functions that are needed to get the predicted values
+per test set subject.
 
 ``` r
 alpha <- 0.1
@@ -158,20 +158,22 @@ hist(d2$interval_width)
 
 ## Small training set analysis
 
-The goal here is to use only 100 subjects - 5 folds of 20 each - in CV+.
-I’ll use the same 1000 test set subjects.
-
 ``` r
+n_K <- 20
+
 dat_tr_list <- list()
 for (i in 1:n_folds){
     dtr <- dat_training %>%
         dplyr::filter(fold == i)
-    ids_to_keep <- sample(dtr$id, size = 20)
+    ids_to_keep <- sample(dtr$id, size = n_K)
     dat_tr_list[[i]] <- dtr %>%
                             dplyr::filter(id %in% ids_to_keep)    
 }
 dat_tr <- dat_tr_list %>% dplyr::bind_rows()
 ```
+
+The goal here is to use only 100 subjects - 5 folds of 20 each - in CV+.
+I’ll use the same 100 test set subjects.
 
 ``` r
 predvals <- list()

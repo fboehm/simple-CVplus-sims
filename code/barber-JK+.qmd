@@ -78,14 +78,15 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
     ###############################
 
     K = 10
-    n_K = np.floor(n/K).astype(int)
-    base_inds_to_delete = np.arange(n_K).astype(int)
-    resids_LKO = np.zeros(n)
-    muh_LKO_vals_testpoint = np.zeros((n,n1))
-    for i in range(K):
-        inds_to_delete = (base_inds_to_delete + n_K*i).astype(int)
+    n_K = np.floor(n/K).astype(int) # number of subjects in each fold
+    base_inds_to_delete = np.arange(n_K).astype(int) # "base" indices for the indices to delete
+    resids_LKO = np.zeros(n) # initialize with zeros
+    muh_LKO_vals_testpoint = np.zeros((n,n1)) # initialize with zeros.Notice the dimensions!!
+    for i in range(K): # i indexes the fold
+        inds_to_delete = (base_inds_to_delete + n_K*i).astype(int) # indices to delete FOR THIS FOLD
         muh_vals_LKO = fit_muh_fun(np.delete(X,inds_to_delete,0),np.delete(Y,inds_to_delete),\
-                                   np.r_[X[inds_to_delete],X1])
+                                   np.r_[X[inds_to_delete],X1]) 
+                                   # Fit the function after deleting the inds_to_delete
         resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K])
         for inner_K in range(n_K):
             muh_LKO_vals_testpoint[inds_to_delete[inner_K]] = muh_vals_LKO[n_K:] # 

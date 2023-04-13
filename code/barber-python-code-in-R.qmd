@@ -8,6 +8,9 @@ library(magrittr)
 set.seed(98765)
 TOL <- 10 ^-8
 # first function
+
+
+
 leastsq_minL2 <- function(X, Y, X1, tol=TOL) {
     svd_X <- svd(X)
     uX <- svd_X$u
@@ -86,19 +89,29 @@ compute_PIs <- function(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y) {
     ###############################
     # construct prediction intervals
     ###############################
-    
+    # preparations for list inputs
+    # the issue is that I can never remember how R does subtraction between a vector and a matrix.
+    #So, I prefer to write out explicitly the operations, rather than relying 
+    #on R's recycling of a vector. Also, I think that ChatGPT has this wrong!
+    # A second issue is the indexing. python starts indices at 0, while R starts at 1.
+
+
+    # make the actual list
     PIs_dict <- list(
     naive = data.frame(
-        lower = muh_vals_testpoint - sort(resids_naive)[ind_q-1],
-        upper = muh_vals_testpoint + sort(resids_naive)[ind_q-1]
+        lower = muh_vals_testpoint - sort(resids_naive)[ind_q-1 + 1],
+        upper = muh_vals_testpoint + sort(resids_naive)[ind_q-1 + 1]
     ),
     jackknife = data.frame(
-        lower = muh_vals_testpoint - sort(resids_LOO)[ind_q-1],
-        upper = muh_vals_testpoint + sort(resids_LOO)[ind_q-1]
+        lower = muh_vals_testpoint - sort(resids_LOO)[ind_q-1 + 1],
+        upper = muh_vals_testpoint + sort(resids_LOO)[ind_q-1 + 1]
     ),
     jackknife.plus = data.frame(
-        lower = apply(sort(muh_LOO_vals_testpoint - resids_LOO), 2, tail, n = ind_q)[1,],
-        upper = apply(sort(muh_LOO_vals_testpoint + resids_LOO), 2, head, n = ind_q)[1,]
+        lower = apply(X = sort(t(muh_LOO_vals_testpoint) - resids_LOO), 
+                        MARGIN = 2, 
+                        FUN = tail, 
+                        n = ind_q)[1,],
+        upper = apply(X = sort(muh_LOO_vals_testpoint + resids_LOO), MARGIN = 2, FUN = head, n = ind_q)[1,]
     ),
     jackknife.mm = data.frame(
         lower = apply(muh_LOO_vals_testpoint, 2, min) - sort(resids_LOO)[ind_q-1],

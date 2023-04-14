@@ -50,7 +50,8 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
     muh_LKO_vals_testpoint = np.zeros((n,n1))
     for i in range(K):
         inds_to_delete = (base_inds_to_delete + n_K*i).astype(int)
-        muh_vals_LKO = fit_muh_fun(np.delete(X,inds_to_delete,0),np.delete(Y,inds_to_delete),\
+        muh_vals_LKO = fit_muh_fun(np.delete(X,inds_to_delete,0),
+                                    np.delete(Y,inds_to_delete),\
                                    np.r_[X[inds_to_delete],X1])
         resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K])
         for inner_K in range(n_K):

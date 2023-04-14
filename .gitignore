@@ -1,4 +1,6 @@
 slurm-*.out
+_environment
+
 
 # History files
 .Rhistory

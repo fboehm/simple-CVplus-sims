@@ -1,6 +1,6 @@
 ---
-title: "Untitled"
-format: html
+title: "Simple simulations"
+format: gfm
 jupyter: python3.10
 ---
 
@@ -120,22 +120,46 @@ beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
 X1 = np.random.normal(size=(n1,d))
 Y1 = X1.dot(beta) + np.random.normal(size=n1)
 
+Y_dic = dict.fromkeys(n_vals, 0)
+X_dic = dict.fromkeys(n_vals, 0)
+
 
 for n in n_vals:
     results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+    Xa = np.zeros((n,d, ntrial))
+    Ya = np.zeros((n, ntrial))
     for itrial in range(ntrial):
         X = np.random.normal(size=(n,d))
+        Xa[:,:, itrial] = X
+        
         Y = X.dot(beta) + np.random.normal(size=n)
+        Ya[:, itrial] = Y
         
         min_Y = Y.min() - 0.1 * (Y.max()-Y.min())
         max_Y = Y.max() + 0.1 * (Y.max()-Y.min())
-        
+        # store X, Y for later use with R code
+        # store as numpy arrays
+
         
         PIs = compute_PIs(X,Y,X1,alpha,leastsq_minL2, min_Y, max_Y, run_full_CP)
         for method in method_names:
             coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
             width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
             results.loc[len(results)]=[itrial,d,method,coverage,width]
+    X_dic[n] = Xa
+    Y_dic[n] = Ya
+    results.to_csv('../results/jackknife_simulation_results-' + str(n) + '.csv',index=False)
+```
 
-    results.to_csv('jackknife_simulation_results-' + str(n) + '.csv',index=False)
+
+```{r}
+Xr <- py$X_dic 
+Yr <- py$Y_dic
+X1r <- py$X1
+Y1r <- py$Y1
+n_valsr <- py$n_vals
+```
+
+```{r}
+
 ```

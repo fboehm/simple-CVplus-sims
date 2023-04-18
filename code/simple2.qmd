@@ -105,10 +105,13 @@ for (n_per_fold in c(2000, 20)){
 ```
 
 ```{r}
-result <- tl %>%
+test_tib_thin <- test_tib %>%
+    dplyr::select(test_id, test_geno)
+tt_intermediate <- tl %>%
     dplyr::bind_rows() %>%
     dplyr::group_by(test_id) %>%
-    dplyr::arrange(desc(training_set_size)) %>%
-    dplyr::summarise(diff_interval_width = interval_width[1] - interval_width[2])
+    dplyr::arrange(desc(training_set_size))
+    dplyr::summarise(diff_interval_width = interval_width[1] - interval_width[2]) %>%
+    dplyr::inner_join(test_tib_thin, by = "test_id")
 ```
 

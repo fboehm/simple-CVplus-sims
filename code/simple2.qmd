@@ -12,29 +12,27 @@ library(magrittr)
 ```{r}
 set.seed(2023-04-15)
 n <- 11000
+n_traits <- 100
 n_snp <- 1
 # simulate genotypes matrix
 geno <- matrix(sample(c(0,1,2), n*n_snp, replace=TRUE, prob=c(0.8,0.15,0.05)), nrow=n, ncol=n_snp)
 # simulate phenotype
-beta <- 0.5
-y <- geno %*% beta + rnorm(n)
+beta <- 10
+y <- as.numeric(geno %*% beta) %*% t(rep(1, n_traits)) + matrix(data = rnorm(n * n_traits), nrow = n, ncol = n_traits)
+# prepare for splitting into training and testing
 n_test <- 1000
 # get test subject ids
 test_ids <- sample(1:n, n_test, replace = FALSE)
 # organize data
-dat <- tibble::tibble(geno = geno[, 1], pheno = y[, 1], id = 1:n) %>%
+dat <- tibble::as_tibble(y) %>%
+    dplyr::bind_cols(geno %>% tibble::as_tibble()) %>%
+    dplyr::mutate(id = 1:n) %>% # fix this when using more than one SNP
     dplyr::mutate(in_test_set = id %in% test_ids)
-```
-
-```{r}
+# split into training and testing
 training <- dat %>% dplyr::filter(!in_test_set)
 testing <- dat %>% dplyr::filter(in_test_set)
 testing2 <- testing %>% dplyr::mutate(fold = NA)
-```
-
-
-```{r}
-# use all 10,000 training with leave K out
+# use all training with leave K out
 alpha <- 0.1
 n_folds <- 5
 n_train <- nrow(training)
@@ -42,7 +40,10 @@ n_train <- nrow(training)
 folds <- split(training$id, sample(rep(1:n_folds, length.out = n_train)))
 training2_pre <- training %>% 
     dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x))))
+```
 
+
+```{r}
 tl <- list()
 for (n_per_fold in c(2000, 20)){
     training2 <- training2_pre %>%
@@ -100,7 +101,6 @@ for (n_per_fold in c(2000, 20)){
         dplyr::mutate(interval_width = upper - lower) %>%
         dplyr::mutate(training_set_size = n_per_fold * n_folds)
     tl[[as.character(n_per_fold * n_folds)]] <- test_tib
-
 }
 ```
 
@@ -115,3 +115,22 @@ tt_intermediate <- tl %>%
     dplyr::inner_join(test_tib_thin, by = "test_id")
 ```
 
+
+
+
+
+
+
+
+
+
+
+## Session Info
+
+```{r, session_info}
+sessioninfo::session_info()
+# git commit info
+gr <- git2r::repository(here::here()) %>%
+    git2r::commits()
+gr[[1]] 
+```

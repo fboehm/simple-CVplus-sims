@@ -12,10 +12,10 @@ library(magrittr)
 ```{r}
 set.seed(2023-04-15)
 n <- 11000
-n_traits <- 100
+n_traits <- 10
 n_snp <- 1
 # simulate genotypes matrix
-geno <- matrix(sample(c(0,1,2), n*n_snp, replace=TRUE, prob=c(0.8,0.15,0.05)), nrow=n, ncol=n_snp)
+geno <- matrix(sample(c(0,1,2), n*n_snp, replace=TRUE, prob=c(0.25,0.5,0.25)), nrow=n, ncol=n_snp)
 # simulate phenotype
 beta <- 10
 y <- as.numeric(geno %*% beta) %*% t(rep(1, n_traits)) + matrix(data = rnorm(n * n_traits), nrow = n, ncol = n_traits)
@@ -25,13 +25,16 @@ n_test <- 1000
 test_ids <- sample(1:n, n_test, replace = FALSE)
 # organize data
 dat <- tibble::as_tibble(y) %>%
-    dplyr::bind_cols(geno %>% tibble::as_tibble()) %>%
+    dplyr::rename_with(function(x){ num <- stringr::str_extract(x, "[0-9]+")
+                                    return(paste0("pheno", num))}
+                        ) %>%
+    dplyr::bind_cols(geno %>% tibble::as_tibble() %>% dplyr::rename(geno = 1)) %>%
     dplyr::mutate(id = 1:n) %>% # fix this when using more than one SNP
     dplyr::mutate(in_test_set = id %in% test_ids)
 # split into training and testing
 training <- dat %>% dplyr::filter(!in_test_set)
 testing <- dat %>% dplyr::filter(in_test_set)
-testing2 <- testing %>% dplyr::mutate(fold = NA)
+testing2 <- testing %>% dplyr::mutate(fold = as.integer(NA))
 # use all training with leave K out
 alpha <- 0.1
 n_folds <- 5
@@ -42,82 +45,114 @@ training2_pre <- training %>%
     dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x))))
 ```
 
+Above, we specified the number of replicates for the simulations. We created
+`r n_traits` replicate traits for the same `r n` subjects. Note that each 
+subject has only `r n_snp` SNPs. 
+
+
 
 ```{r}
+tictoc::tic() # timing
 tl <- list()
-for (n_per_fold in c(2000, 20)){
+n_per_fold_values <- c(2000, 20)
+for (n_per_fold in n_per_fold_values){
     training2 <- training2_pre %>%
         dplyr::group_by(fold) %>%
         dplyr::slice_sample(n = n_per_fold)
-
-    # regress leaving one fold out
-    preds <- list()
-    for (k in 1:n_folds) {
-        # get training data
-        train <- training2 %>% dplyr::filter(fold != k)
-        # get testing data
-        test <- training2 %>% dplyr::filter(fold == k)
-        # fit model
-        fit <- lm(pheno ~ geno, data = train)
-        # predict
-        foo <- test %>% dplyr::bind_rows(testing2)
-        foo$pred <- predict(fit, newdata = foo)
-        foo$fold_left_out <- k
-        # save predictions
-        preds[[k]] <- foo
+    # store each trait's outputs
+    out <- list()
+    # loop over traits
+    for (trait_num in 1:n_traits){
+        tr2_one_trait <- training2 %>%
+            dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
+            dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
+        te2_one_trait <- testing2 %>%
+            dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
+            dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
+        
+        # regress leaving one fold out
+        preds <- list()
+        for (fold_num in 1:n_folds) {
+            # get training data
+            train <- tr2_one_trait %>% dplyr::filter(fold != fold_num)
+            # get testing data
+            test <- tr2_one_trait %>% dplyr::filter(fold == fold_num)
+            # fit model
+            fit <- lm(pheno ~ geno, data = train)
+            # predict
+            foo <- test %>% dplyr::bind_rows(te2_one_trait)
+            foo$pred <- predict(fit, newdata = foo)
+            foo$fold_left_out <- fold_num
+            # save predictions
+            preds[[fold_num]] <- foo
+        }
+        # assemble predicted values
+        # get absolute residuals
+        preds_training <- preds %>%
+            dplyr::bind_rows() %>%
+            dplyr::filter(!is.na(fold)) %>% # keep only training data
+            dplyr::mutate(absolute_residual = abs(pheno - pred)) %>%
+            dplyr::select( - fold_left_out)
+        preds_test <- preds %>%
+            dplyr::bind_rows() %>%
+            dplyr::filter(is.na(fold))
+        # get indexes
+        plus_index <- ceiling((1 - alpha) * (nrow(preds_training) + 1))
+        minus_index <- floor(alpha * (nrow(preds_training) + 1))
+    
+        # go one by one through test set (testing2)
+        test_list <- list()
+        for (i in 1:nrow(testing2)) {
+            tt <- testing2[i, ]
+            pt2 <- preds_test %>% 
+                dplyr::filter(id == tt$id) %>% # our only use of tt
+                dplyr::rename_with(function(x)paste0("test_", x))
+            preds_all <- preds_training %>%
+                dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
+                dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
+                                test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
+            uu <- sort(preds_all$test_fitted_plus_absolute_residual)[plus_index]
+            ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
+            # make a tibble with exactly one row
+            test_list[[i]] <- preds_all %>%
+                dplyr::ungroup() %>% # ungroup by fold so that we get only one row at the end!
+                dplyr::select(test_id, test_geno, test_pheno) %>%
+                dplyr::mutate(lower = ll, upper = uu) %>%
+                dplyr::distinct()
+        }
+        test_tib <- test_list %>%
+            dplyr::bind_rows() %>%
+            dplyr::mutate(in_interval = test_pheno >= lower & test_pheno <= upper) %>%
+            dplyr::mutate(interval_width = upper - lower) %>%
+            dplyr::mutate(training_set_size = n_per_fold * n_folds,
+                            trait_num = trait_num)
+        out[[trait_num]] <- test_tib
     }
-    # assemble predicted values
-    # get absolute residuals
-    p2 <- preds %>%
-        dplyr::bind_rows() %>%
-        dplyr::filter(!is.na(fold)) %>%
-        dplyr::mutate(absolute_residual = abs(pheno - pred)) %>%
-        dplyr::select( - fold_left_out)
-    ptest <- preds %>%
-        dplyr::bind_rows() %>%
-        dplyr::filter(is.na(fold))
-    # get indexes
-    plus_index <- ceiling((1 - alpha) * (nrow(p2) + 1))
-    minus_index <- floor(alpha * (nrow(p2) + 1))
-
-    # go one by one through test set (testing2)
-    test_list <- list()
-    for (i in 1:nrow(testing2)) {
-        tt <- testing2[i, ]
-        pt2 <- ptest %>% 
-            dplyr::filter(id == tt$id) %>%
-            dplyr::rename_with(function(x)paste0("test_", x))
-        dd <- p2 %>%
-            dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
-            dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
-                            test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
-        uu <- sort(dd$test_fitted_plus_absolute_residual)[plus_index]
-        ll <- sort(dd$test_fitted_minus_absolute_residual)[minus_index]
-        test_list[[i]] <- tibble::tibble(test_id = tt$id, test_geno = dd$test_geno[1], test_pheno = dd$test_pheno[1], upper = uu, lower = ll)
-    }
-    test_tib <- test_list %>%
-        dplyr::bind_rows() %>%
-        dplyr::mutate(in_interval = test_pheno >= lower & test_pheno <= upper) %>%
-        dplyr::mutate(interval_width = upper - lower) %>%
-        dplyr::mutate(training_set_size = n_per_fold * n_folds)
-    tl[[as.character(n_per_fold * n_folds)]] <- test_tib
+    tl[[as.character(n_per_fold * n_folds)]]  <- out
 }
+tictoc::toc() # timing
+```
+
+```{r, results = "asis"}
+#test_tib_thin <- test_tib %>%
+#    dplyr::select(test_id, test_geno)
+tt_intermediate <- tl %>%
+    dplyr::bind_rows(.id = "id") 
+tt_intermediate %>%
+    dplyr::group_by(training_set_size, trait_num) %>%
+    dplyr::summarise(mean_interval_width = mean(interval_width),
+                    sd_interval_width = sd(interval_width),
+                    mean_in_interval = mean(in_interval),
+                    sd_in_interval = sd(in_interval)) %>%
+                    knitr::kable() %>%
+                    print()
 ```
 
 ```{r}
-test_tib_thin <- test_tib %>%
-    dplyr::select(test_id, test_geno)
-tt_intermediate <- tl %>%
-    dplyr::bind_rows() %>%
-    dplyr::group_by(test_id) %>%
-    dplyr::arrange(desc(training_set_size))
-    dplyr::summarise(diff_interval_width = interval_width[1] - interval_width[2]) %>%
-    dplyr::inner_join(test_tib_thin, by = "test_id")
+library(ggplot2)
+tt_intermediate %>%
+    ggplot(aes(x = training_set_size, y = interval_width, color = trait_num)) + geom_point() + geom_boxplot() + theme_bw()
 ```
-
-
-
-
 
 
 

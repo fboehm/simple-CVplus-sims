@@ -58,7 +58,8 @@ n_per_fold_values <- c(2000, 20)
 for (n_per_fold in n_per_fold_values){
     training2 <- training2_pre %>%
         dplyr::group_by(fold) %>%
-        dplyr::slice_sample(n = n_per_fold)
+        dplyr::slice_sample(n = n_per_fold) %>%
+        dplyr::ungroup()
     # store each trait's outputs
     out <- list()
     # loop over traits
@@ -83,8 +84,14 @@ for (n_per_fold in n_per_fold_values){
             foo <- test %>% dplyr::bind_rows(te2_one_trait)
             foo$pred <- predict(fit, newdata = foo)
             foo$fold_left_out <- fold_num
+            result <- foo %>%
+                dplyr::mutate(beta1_hat = coef(fit)[2],
+                              beta0_hat = coef(fit)[1],
+                              se_beta1_hat = summary(fit)$coefficients[2, 2],
+                              se_beta0_hat = summary(fit)$coefficients[1, 2]
+                )
             # save predictions
-            preds[[fold_num]] <- foo
+            preds[[fold_num]] <- result
         }
         # assemble predicted values
         # get absolute residuals
@@ -115,7 +122,6 @@ for (n_per_fold in n_per_fold_values){
             ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
             # make a tibble with exactly one row
             test_list[[i]] <- preds_all %>%
-                dplyr::ungroup() %>% # ungroup by fold so that we get only one row at the end!
                 dplyr::select(test_id, test_geno, test_pheno) %>%
                 dplyr::mutate(lower = ll, upper = uu) %>%
                 dplyr::distinct()
@@ -151,8 +157,12 @@ tt_intermediate %>%
 ```{r}
 library(ggplot2)
 tt_intermediate %>%
-    ggplot(aes(x = training_set_size, y = interval_width, color = trait_num)) + geom_point() + geom_boxplot() + theme_bw()
+    ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(trait_num)))  +
+    geom_boxplot()
+ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
 ```
+
+
 
 
 

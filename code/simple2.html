@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Simulations with a single SNP &amp; different sample sizes</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="simple2_files/libs/clipboard/clipboard.min.js"></script>
+<script src="simple2_files/libs/quarto-html/quarto.js"></script>
+<script src="simple2_files/libs/quarto-html/popper.min.js"></script>
+<script src="simple2_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="simple2_files/libs/quarto-html/anchor.min.js"></script>
+<link href="simple2_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="simple2_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="simple2_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="simple2_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="simple2_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Simulations with a single SNP &amp; different sample sizes</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+</header>
+
+<p>First, simulate genotype data for 10,000 subjects.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">2023-04-15</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">11000</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>n_traits <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>n_snp <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co"># simulate genotypes matrix</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>geno <span class="ot">&lt;-</span> <span class="fu">matrix</span>(<span class="fu">sample</span>(<span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>,<span class="dv">2</span>), n<span class="sc">*</span>n_snp, <span class="at">replace=</span><span class="cn">TRUE</span>, <span class="at">prob=</span><span class="fu">c</span>(<span class="fl">0.25</span>,<span class="fl">0.5</span>,<span class="fl">0.25</span>)), <span class="at">nrow=</span>n, <span class="at">ncol=</span>n_snp)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># simulate phenotype</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>beta <span class="ot">&lt;-</span> <span class="dv">10</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>y <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(geno <span class="sc">%*%</span> beta) <span class="sc">%*%</span> <span class="fu">t</span>(<span class="fu">rep</span>(<span class="dv">1</span>, n_traits)) <span class="sc">+</span> <span class="fu">matrix</span>(<span class="at">data =</span> <span class="fu">rnorm</span>(n <span class="sc">*</span> n_traits), <span class="at">nrow =</span> n, <span class="at">ncol =</span> n_traits)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># prepare for splitting into training and testing</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>n_test <span class="ot">&lt;-</span> <span class="dv">1000</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># get test subject ids</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>test_ids <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="dv">1</span><span class="sc">:</span>n, n_test, <span class="at">replace =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># organize data</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>dat <span class="ot">&lt;-</span> tibble<span class="sc">::</span><span class="fu">as_tibble</span>(y) <span class="sc">%&gt;%</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">rename_with</span>(<span class="cf">function</span>(x){ num <span class="ot">&lt;-</span> stringr<span class="sc">::</span><span class="fu">str_extract</span>(x, <span class="st">"[0-9]+"</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                                    <span class="fu">return</span>(<span class="fu">paste0</span>(<span class="st">"pheno"</span>, num))}</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>                        ) <span class="sc">%&gt;%</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">bind_cols</span>(geno <span class="sc">%&gt;%</span> tibble<span class="sc">::</span><span class="fu">as_tibble</span>() <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">geno =</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">id =</span> <span class="dv">1</span><span class="sc">:</span>n) <span class="sc">%&gt;%</span> <span class="co"># fix this when using more than one SNP</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">in_test_set =</span> id <span class="sc">%in%</span> test_ids)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if
+`.name_repair` is omitted as of tibble 2.0.0.
+ℹ Using compatibility `.name_repair`.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># split into training and testing</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>training <span class="ot">&lt;-</span> dat <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span>in_test_set)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>testing <span class="ot">&lt;-</span> dat <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(in_test_set)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>testing2 <span class="ot">&lt;-</span> testing <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">fold =</span> <span class="fu">as.integer</span>(<span class="cn">NA</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co"># use all training with leave K out</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>alpha <span class="ot">&lt;-</span> <span class="fl">0.1</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>n_folds <span class="ot">&lt;-</span> <span class="dv">5</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>n_train <span class="ot">&lt;-</span> <span class="fu">nrow</span>(training)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co"># partition training data into 5 folds</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>folds <span class="ot">&lt;-</span> <span class="fu">split</span>(training<span class="sc">$</span>id, <span class="fu">sample</span>(<span class="fu">rep</span>(<span class="dv">1</span><span class="sc">:</span>n_folds, <span class="at">length.out =</span> n_train)))</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>training2_pre <span class="ot">&lt;-</span> training <span class="sc">%&gt;%</span> </span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">fold =</span> id <span class="sc">%&gt;%</span> purrr<span class="sc">::</span><span class="fu">map_int</span>(<span class="sc">~</span><span class="fu">which</span>(<span class="fu">sapply</span>(folds, <span class="cf">function</span>(x) . <span class="sc">%in%</span> x))))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Above, we specified the number of replicates for the simulations. We created 10 replicate traits for the same 1.1^{4} subjects. Note that each subject has only 1 SNPs.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">tic</span>() <span class="co"># timing</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>tl <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>n_per_fold_values <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="dv">2000</span>, <span class="dv">20</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (n_per_fold <span class="cf">in</span> n_per_fold_values){</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    training2 <span class="ot">&lt;-</span> training2_pre <span class="sc">%&gt;%</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">group_by</span>(fold) <span class="sc">%&gt;%</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">slice_sample</span>(<span class="at">n =</span> n_per_fold) <span class="sc">%&gt;%</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        dplyr<span class="sc">::</span><span class="fu">ungroup</span>()</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># store each trait's outputs</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># loop over traits</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (trait_num <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_traits){</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        tr2_one_trait <span class="ot">&lt;-</span> training2 <span class="sc">%&gt;%</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">select</span>(id, fold, geno, tidyselect<span class="sc">::</span><span class="fu">ends_with</span>(<span class="fu">paste0</span>(<span class="st">"pheno"</span>, trait_num))) <span class="sc">%&gt;%</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">pheno =</span> tidyselect<span class="sc">::</span><span class="fu">ends_with</span>(<span class="fu">paste0</span>(<span class="st">"pheno"</span>, trait_num)))</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        te2_one_trait <span class="ot">&lt;-</span> testing2 <span class="sc">%&gt;%</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">select</span>(id, fold, geno, tidyselect<span class="sc">::</span><span class="fu">ends_with</span>(<span class="fu">paste0</span>(<span class="st">"pheno"</span>, trait_num))) <span class="sc">%&gt;%</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">pheno =</span> tidyselect<span class="sc">::</span><span class="fu">ends_with</span>(<span class="fu">paste0</span>(<span class="st">"pheno"</span>, trait_num)))</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>        <span class="co"># regress leaving one fold out</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        preds <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (fold_num <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span>n_folds) {</span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>            <span class="co"># get training data</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>            train <span class="ot">&lt;-</span> tr2_one_trait <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(fold <span class="sc">!=</span> fold_num)</span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>            <span class="co"># get testing data</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>            test <span class="ot">&lt;-</span> tr2_one_trait <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(fold <span class="sc">==</span> fold_num)</span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>            <span class="co"># fit model</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a>            fit <span class="ot">&lt;-</span> <span class="fu">lm</span>(pheno <span class="sc">~</span> geno, <span class="at">data =</span> train)</span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>            <span class="co"># predict</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>            foo <span class="ot">&lt;-</span> test <span class="sc">%&gt;%</span> dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(te2_one_trait)</span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>            foo<span class="sc">$</span>pred <span class="ot">&lt;-</span> <span class="fu">predict</span>(fit, <span class="at">newdata =</span> foo)</span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>            foo<span class="sc">$</span>fold_left_out <span class="ot">&lt;-</span> fold_num</span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>            result <span class="ot">&lt;-</span> foo <span class="sc">%&gt;%</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">beta1_hat =</span> <span class="fu">coef</span>(fit)[<span class="dv">2</span>],</span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>                              <span class="at">beta0_hat =</span> <span class="fu">coef</span>(fit)[<span class="dv">1</span>],</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>                              <span class="at">se_beta1_hat =</span> <span class="fu">summary</span>(fit)<span class="sc">$</span>coefficients[<span class="dv">2</span>, <span class="dv">2</span>],</span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>                              <span class="at">se_beta0_hat =</span> <span class="fu">summary</span>(fit)<span class="sc">$</span>coefficients[<span class="dv">1</span>, <span class="dv">2</span>]</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>                )</span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>            <span class="co"># save predictions</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>            preds[[fold_num]] <span class="ot">&lt;-</span> result</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a>        <span class="co"># assemble predicted values</span></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get absolute residuals</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>        preds_training <span class="ot">&lt;-</span> preds <span class="sc">%&gt;%</span></span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(fold)) <span class="sc">%&gt;%</span> <span class="co"># keep only training data</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">absolute_residual =</span> <span class="fu">abs</span>(pheno <span class="sc">-</span> pred)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">select</span>( <span class="sc">-</span> fold_left_out)</span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>        preds_test <span class="ot">&lt;-</span> preds <span class="sc">%&gt;%</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="fu">is.na</span>(fold))</span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>        <span class="co"># get indexes</span></span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        plus_index <span class="ot">&lt;-</span> <span class="fu">ceiling</span>((<span class="dv">1</span> <span class="sc">-</span> alpha) <span class="sc">*</span> (<span class="fu">nrow</span>(preds_training) <span class="sc">+</span> <span class="dv">1</span>))</span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>        minus_index <span class="ot">&lt;-</span> <span class="fu">floor</span>(alpha <span class="sc">*</span> (<span class="fu">nrow</span>(preds_training) <span class="sc">+</span> <span class="dv">1</span>))</span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>        <span class="co"># go one by one through test set (testing2)</span></span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a>        test_list <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(testing2)){</span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>            tt <span class="ot">&lt;-</span> testing2[i, ]</span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a>            pt2 <span class="ot">&lt;-</span> preds_test <span class="sc">%&gt;%</span> </span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">filter</span>(id <span class="sc">==</span> tt<span class="sc">$</span>id) <span class="sc">%&gt;%</span> <span class="co"># our only use of tt</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">rename_with</span>(<span class="cf">function</span>(x)<span class="fu">paste0</span>(<span class="st">"test_"</span>, x)) </span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>                <span class="co"># pt2 contains the five predicted values for a single test subject</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>            <span class="fu">nrow</span>(pt2) <span class="co"># 5</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>            preds_all <span class="ot">&lt;-</span> preds_training <span class="sc">%&gt;%</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">left_join</span>(pt2, <span class="at">by =</span> <span class="fu">c</span>(<span class="st">"fold"</span> <span class="ot">=</span> <span class="st">"test_fold_left_out"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">test_fitted_plus_absolute_residual =</span> test_pred <span class="sc">+</span> absolute_residual, </span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>                              <span class="at">test_fitted_minus_absolute_residual =</span> test_pred <span class="sc">-</span> absolute_residual) </span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>            uu <span class="ot">&lt;-</span> <span class="fu">sort</span>(preds_all<span class="sc">$</span>test_fitted_plus_absolute_residual)[plus_index]</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>            ll <span class="ot">&lt;-</span> <span class="fu">sort</span>(preds_all<span class="sc">$</span>test_fitted_minus_absolute_residual)[minus_index]</span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>            <span class="co"># make a tibble with exactly one row</span></span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>            test_list[[i]] <span class="ot">&lt;-</span> preds_all <span class="sc">%&gt;%</span></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">select</span>(test_id, test_geno, test_pheno, test_beta1_hat, fold) <span class="sc">%&gt;%</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">lower =</span> ll, <span class="at">upper =</span> uu) <span class="sc">%&gt;%</span></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>                dplyr<span class="sc">::</span><span class="fu">distinct</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>                tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">names_from =</span> fold, </span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">values_from =</span> test_beta1_hat,</span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">names_prefix =</span> <span class="st">"beta1_hat_fold_"</span></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a>                                    )</span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>        test_tib <span class="ot">&lt;-</span> test_list <span class="sc">%&gt;%</span></span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">bind_rows</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">in_interval =</span> test_pheno <span class="sc">&gt;=</span> lower <span class="sc">&amp;</span> test_pheno <span class="sc">&lt;=</span> upper) <span class="sc">%&gt;%</span></span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">interval_width =</span> upper <span class="sc">-</span> lower) <span class="sc">%&gt;%</span></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>            dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">training_set_size =</span> n_per_fold <span class="sc">*</span> n_folds,</span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a>                            <span class="at">trait_num =</span> trait_num)</span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>        out[[trait_num]] <span class="ot">&lt;-</span> test_tib</span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>    tl[[<span class="fu">as.character</span>(n_per_fold <span class="sc">*</span> n_folds)]]  <span class="ot">&lt;-</span> out</span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>tictoc<span class="sc">::</span><span class="fu">toc</span>() <span class="co"># timing</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>625.942 sec elapsed</code></pre>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">#test_tib_thin &lt;- test_tib %&gt;%</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#    dplyr::select(test_id, test_geno)</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>tt_intermediate <span class="ot">&lt;-</span> tl <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">bind_rows</span>(<span class="at">.id =</span> <span class="st">"id"</span>) </span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>tt_intermediate <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(training_set_size, trait_num) <span class="sc">%&gt;%</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">mean_interval_width =</span> <span class="fu">mean</span>(interval_width),</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">sd_interval_width =</span> <span class="fu">sd</span>(interval_width),</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">mean_in_interval =</span> <span class="fu">mean</span>(in_interval),</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">sd_in_interval =</span> <span class="fu">sd</span>(in_interval), </span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">beta1_hat_fold_1 =</span> <span class="fu">mean</span>(beta1_hat_fold_1),</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>                    <span class="at">beta1_hat_fold_2 =</span> <span class="fu">mean</span>(beta1_hat_fold_2),</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>                    <span class="at">beta1_hat_fold_3 =</span> <span class="fu">mean</span>(beta1_hat_fold_3),</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>                    <span class="at">beta1_hat_fold_4 =</span> <span class="fu">mean</span>(beta1_hat_fold_4),</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>                    <span class="at">beta1_hat_fold_5 =</span> <span class="fu">mean</span>(beta1_hat_fold_5)</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>                    ) <span class="sc">%&gt;%</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>                    dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>                    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">mean_b1 =</span> purrr<span class="sc">::</span><span class="fu">pmap_dbl</span>(<span class="at">.l =</span> <span class="fu">list</span>(beta1_hat_fold_1,</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_2, </span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_3, </span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_4,</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>                                                                         beta1_hat_fold_5), </span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">.f =</span> <span class="cf">function</span>(x, y, z, w, v) <span class="fu">mean</span>(<span class="fu">c</span>(x, y, z, w, v))),</span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">sd_b1 =</span> purrr<span class="sc">::</span><span class="fu">pmap_dbl</span>(<span class="at">.l =</span> <span class="fu">list</span>(beta1_hat_fold_1,</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_2, </span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_3, </span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>                                                                        beta1_hat_fold_4,</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>                                                                         beta1_hat_fold_5), </span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>                                                           <span class="at">.f =</span> <span class="cf">function</span>(x, y, z, w, v) <span class="fu">sd</span>(<span class="fu">c</span>(x, y, z, w, v)))</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>                    ) <span class="sc">%&gt;%</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>                    knitr<span class="sc">::</span><span class="fu">kable</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>                    <span class="fu">print</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>`summarise()` has grouped output by 'training_set_size'. You can override using
+the `.groups` argument.</code></pre>
+<table class="table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 4%">
+<col style="width: 9%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 4%">
+<col style="width: 4%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: right;">training_set_size</th>
+<th style="text-align: right;">trait_num</th>
+<th style="text-align: right;">mean_interval_width</th>
+<th style="text-align: right;">sd_interval_width</th>
+<th style="text-align: right;">mean_in_interval</th>
+<th style="text-align: right;">sd_in_interval</th>
+<th style="text-align: right;">beta1_hat_fold_1</th>
+<th style="text-align: right;">beta1_hat_fold_2</th>
+<th style="text-align: right;">beta1_hat_fold_3</th>
+<th style="text-align: right;">beta1_hat_fold_4</th>
+<th style="text-align: right;">beta1_hat_fold_5</th>
+<th style="text-align: right;">mean_b1</th>
+<th style="text-align: right;">sd_b1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3.353573</td>
+<td style="text-align: right;">0.0129964</td>
+<td style="text-align: right;">0.919</td>
+<td style="text-align: right;">0.2729716</td>
+<td style="text-align: right;">10.139861</td>
+<td style="text-align: right;">10.347822</td>
+<td style="text-align: right;">10.216658</td>
+<td style="text-align: right;">10.283637</td>
+<td style="text-align: right;">10.228992</td>
+<td style="text-align: right;">10.243394</td>
+<td style="text-align: right;">0.0777273</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3.269282</td>
+<td style="text-align: right;">0.0311728</td>
+<td style="text-align: right;">0.907</td>
+<td style="text-align: right;">0.2905778</td>
+<td style="text-align: right;">10.029817</td>
+<td style="text-align: right;">10.027591</td>
+<td style="text-align: right;">10.082244</td>
+<td style="text-align: right;">10.032147</td>
+<td style="text-align: right;">9.916443</td>
+<td style="text-align: right;">10.017648</td>
+<td style="text-align: right;">0.0609760</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3.246337</td>
+<td style="text-align: right;">0.0152826</td>
+<td style="text-align: right;">0.890</td>
+<td style="text-align: right;">0.3130463</td>
+<td style="text-align: right;">10.233641</td>
+<td style="text-align: right;">10.263063</td>
+<td style="text-align: right;">10.217109</td>
+<td style="text-align: right;">10.313080</td>
+<td style="text-align: right;">10.323161</td>
+<td style="text-align: right;">10.270011</td>
+<td style="text-align: right;">0.0470362</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">3.229049</td>
+<td style="text-align: right;">0.0659925</td>
+<td style="text-align: right;">0.901</td>
+<td style="text-align: right;">0.2988115</td>
+<td style="text-align: right;">10.335762</td>
+<td style="text-align: right;">10.295860</td>
+<td style="text-align: right;">10.263683</td>
+<td style="text-align: right;">10.117457</td>
+<td style="text-align: right;">10.293189</td>
+<td style="text-align: right;">10.261190</td>
+<td style="text-align: right;">0.0843390</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3.460026</td>
+<td style="text-align: right;">0.0038258</td>
+<td style="text-align: right;">0.909</td>
+<td style="text-align: right;">0.2877530</td>
+<td style="text-align: right;">9.997463</td>
+<td style="text-align: right;">9.960094</td>
+<td style="text-align: right;">9.997248</td>
+<td style="text-align: right;">10.019471</td>
+<td style="text-align: right;">9.963694</td>
+<td style="text-align: right;">9.987594</td>
+<td style="text-align: right;">0.0251704</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3.355759</td>
+<td style="text-align: right;">0.0073000</td>
+<td style="text-align: right;">0.897</td>
+<td style="text-align: right;">0.3041110</td>
+<td style="text-align: right;">10.018040</td>
+<td style="text-align: right;">10.077735</td>
+<td style="text-align: right;">10.142020</td>
+<td style="text-align: right;">9.990942</td>
+<td style="text-align: right;">10.041804</td>
+<td style="text-align: right;">10.054108</td>
+<td style="text-align: right;">0.0585852</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">3.980449</td>
+<td style="text-align: right;">0.0416188</td>
+<td style="text-align: right;">0.952</td>
+<td style="text-align: right;">0.2138732</td>
+<td style="text-align: right;">10.003445</td>
+<td style="text-align: right;">10.069239</td>
+<td style="text-align: right;">10.034488</td>
+<td style="text-align: right;">10.196176</td>
+<td style="text-align: right;">10.108486</td>
+<td style="text-align: right;">10.082367</td>
+<td style="text-align: right;">0.0747129</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">3.326653</td>
+<td style="text-align: right;">0.0074721</td>
+<td style="text-align: right;">0.907</td>
+<td style="text-align: right;">0.2905778</td>
+<td style="text-align: right;">10.113209</td>
+<td style="text-align: right;">10.096988</td>
+<td style="text-align: right;">10.119445</td>
+<td style="text-align: right;">10.129327</td>
+<td style="text-align: right;">10.132087</td>
+<td style="text-align: right;">10.118211</td>
+<td style="text-align: right;">0.0140808</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">3.653136</td>
+<td style="text-align: right;">0.0019625</td>
+<td style="text-align: right;">0.938</td>
+<td style="text-align: right;">0.2412762</td>
+<td style="text-align: right;">9.985875</td>
+<td style="text-align: right;">10.193415</td>
+<td style="text-align: right;">10.082621</td>
+<td style="text-align: right;">10.138359</td>
+<td style="text-align: right;">9.943896</td>
+<td style="text-align: right;">10.068833</td>
+<td style="text-align: right;">0.1037255</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">3.561284</td>
+<td style="text-align: right;">0.0119700</td>
+<td style="text-align: right;">0.917</td>
+<td style="text-align: right;">0.2760203</td>
+<td style="text-align: right;">9.969111</td>
+<td style="text-align: right;">9.865656</td>
+<td style="text-align: right;">9.826659</td>
+<td style="text-align: right;">9.741551</td>
+<td style="text-align: right;">9.998203</td>
+<td style="text-align: right;">9.880236</td>
+<td style="text-align: right;">0.1050377</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3.290953</td>
+<td style="text-align: right;">0.0010846</td>
+<td style="text-align: right;">0.918</td>
+<td style="text-align: right;">0.2745020</td>
+<td style="text-align: right;">9.977913</td>
+<td style="text-align: right;">9.984978</td>
+<td style="text-align: right;">9.990252</td>
+<td style="text-align: right;">9.986172</td>
+<td style="text-align: right;">9.980599</td>
+<td style="text-align: right;">9.983983</td>
+<td style="text-align: right;">0.0048316</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">3.312527</td>
+<td style="text-align: right;">0.0020374</td>
+<td style="text-align: right;">0.912</td>
+<td style="text-align: right;">0.2834367</td>
+<td style="text-align: right;">9.982828</td>
+<td style="text-align: right;">9.974832</td>
+<td style="text-align: right;">9.967156</td>
+<td style="text-align: right;">9.985279</td>
+<td style="text-align: right;">9.985672</td>
+<td style="text-align: right;">9.979154</td>
+<td style="text-align: right;">0.0080021</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">3.320756</td>
+<td style="text-align: right;">0.0006827</td>
+<td style="text-align: right;">0.904</td>
+<td style="text-align: right;">0.2947386</td>
+<td style="text-align: right;">9.982968</td>
+<td style="text-align: right;">9.988185</td>
+<td style="text-align: right;">9.993088</td>
+<td style="text-align: right;">9.996586</td>
+<td style="text-align: right;">9.988597</td>
+<td style="text-align: right;">9.989885</td>
+<td style="text-align: right;">0.0051858</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">3.279787</td>
+<td style="text-align: right;">0.0008393</td>
+<td style="text-align: right;">0.909</td>
+<td style="text-align: right;">0.2877530</td>
+<td style="text-align: right;">10.019184</td>
+<td style="text-align: right;">10.022152</td>
+<td style="text-align: right;">10.013322</td>
+<td style="text-align: right;">10.017043</td>
+<td style="text-align: right;">10.011324</td>
+<td style="text-align: right;">10.016605</td>
+<td style="text-align: right;">0.0043670</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">3.288617</td>
+<td style="text-align: right;">0.0002318</td>
+<td style="text-align: right;">0.891</td>
+<td style="text-align: right;">0.3117952</td>
+<td style="text-align: right;">9.987089</td>
+<td style="text-align: right;">9.981302</td>
+<td style="text-align: right;">9.983809</td>
+<td style="text-align: right;">9.983244</td>
+<td style="text-align: right;">9.982069</td>
+<td style="text-align: right;">9.983502</td>
+<td style="text-align: right;">0.0022316</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">3.291975</td>
+<td style="text-align: right;">0.0012743</td>
+<td style="text-align: right;">0.888</td>
+<td style="text-align: right;">0.3155243</td>
+<td style="text-align: right;">9.992487</td>
+<td style="text-align: right;">9.984260</td>
+<td style="text-align: right;">9.978471</td>
+<td style="text-align: right;">9.968695</td>
+<td style="text-align: right;">9.989893</td>
+<td style="text-align: right;">9.982761</td>
+<td style="text-align: right;">0.0095393</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">3.307993</td>
+<td style="text-align: right;">0.0007978</td>
+<td style="text-align: right;">0.905</td>
+<td style="text-align: right;">0.2933617</td>
+<td style="text-align: right;">10.007027</td>
+<td style="text-align: right;">9.996307</td>
+<td style="text-align: right;">10.003696</td>
+<td style="text-align: right;">10.003574</td>
+<td style="text-align: right;">10.010460</td>
+<td style="text-align: right;">10.004213</td>
+<td style="text-align: right;">0.0052467</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">3.308931</td>
+<td style="text-align: right;">0.0010771</td>
+<td style="text-align: right;">0.905</td>
+<td style="text-align: right;">0.2933617</td>
+<td style="text-align: right;">10.000219</td>
+<td style="text-align: right;">10.007251</td>
+<td style="text-align: right;">10.001309</td>
+<td style="text-align: right;">10.010352</td>
+<td style="text-align: right;">9.991695</td>
+<td style="text-align: right;">10.002165</td>
+<td style="text-align: right;">0.0071944</td>
+</tr>
+<tr class="odd">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">3.274744</td>
+<td style="text-align: right;">0.0014894</td>
+<td style="text-align: right;">0.906</td>
+<td style="text-align: right;">0.2919747</td>
+<td style="text-align: right;">10.000456</td>
+<td style="text-align: right;">10.014163</td>
+<td style="text-align: right;">10.013602</td>
+<td style="text-align: right;">10.021682</td>
+<td style="text-align: right;">10.026449</td>
+<td style="text-align: right;">10.015270</td>
+<td style="text-align: right;">0.0098684</td>
+</tr>
+<tr class="even">
+<td style="text-align: right;">10000</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">3.331720</td>
+<td style="text-align: right;">0.0007399</td>
+<td style="text-align: right;">0.897</td>
+<td style="text-align: right;">0.3041110</td>
+<td style="text-align: right;">10.013960</td>
+<td style="text-align: right;">10.004986</td>
+<td style="text-align: right;">10.006299</td>
+<td style="text-align: right;">10.002682</td>
+<td style="text-align: right;">10.014836</td>
+<td style="text-align: right;">10.008553</td>
+<td style="text-align: right;">0.0054997</td>
+</tr>
+</tbody>
+</table>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>tt_intermediate <span class="sc">%&gt;%</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">y =</span> interval_width, <span class="at">colour =</span> <span class="fu">as.factor</span>(training_set_size), <span class="at">x =</span> <span class="fu">as.factor</span>(trait_num)))  <span class="sc">+</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_boxplot</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="simple2_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(here<span class="sc">::</span><span class="fu">here</span>(<span class="st">"figures"</span>, <span class="st">"interval_width_boxplot.png"</span>), <span class="at">width =</span> <span class="dv">10</span>, <span class="at">height =</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="session-info" class="level2">
+<h2 class="anchored" data-anchor-id="session-info">Session Info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>sessioninfo<span class="sc">::</span><span class="fu">session_info</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>─ Session info ───────────────────────────────────────────────────────────────
+ setting  value
+ version  R version 4.2.3 (2023-03-15)
+ os       Ubuntu 18.04.6 LTS
+ system   x86_64, linux-gnu
+ ui       X11
+ language en_US:
+ collate  en_US.UTF-8
+ ctype    en_US.UTF-8
+ tz       America/Detroit
+ date     2023-04-22
+ pandoc   1.19.2.4 @ /usr/bin/ (via rmarkdown)
+
+─ Packages ───────────────────────────────────────────────────────────────────
+ package     * version date (UTC) lib source
+ cli           3.6.1   2023-03-23 [1] CRAN (R 4.2.3)
+ colorspace    2.1-0   2023-01-23 [1] CRAN (R 4.2.2)
+ digest        0.6.31  2022-12-11 [1] CRAN (R 4.2.2)
+ dplyr         1.1.1   2023-03-22 [1] CRAN (R 4.2.3)
+ evaluate      0.20    2023-01-17 [1] CRAN (R 4.2.2)
+ fansi         1.0.4   2023-01-22 [1] CRAN (R 4.2.2)
+ farver        2.1.1   2022-07-06 [1] CRAN (R 4.2.3)
+ fastmap       1.1.1   2023-02-24 [1] CRAN (R 4.2.3)
+ generics      0.1.3   2022-07-05 [1] CRAN (R 4.2.3)
+ ggplot2     * 3.4.2   2023-04-03 [1] CRAN (R 4.2.3)
+ glue          1.6.2   2022-02-24 [1] CRAN (R 4.2.0)
+ gtable        0.3.3   2023-03-21 [1] CRAN (R 4.2.3)
+ here          1.0.1   2020-12-13 [2] CRAN (R 4.1.1)
+ htmltools     0.5.5   2023-03-23 [1] CRAN (R 4.2.3)
+ htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.2.2)
+ jsonlite      1.8.4   2022-12-06 [1] CRAN (R 4.2.3)
+ knitr         1.42    2023-01-25 [1] CRAN (R 4.2.3)
+ labeling      0.4.2   2020-10-20 [2] CRAN (R 4.0.3)
+ lifecycle     1.0.3   2022-10-07 [1] CRAN (R 4.2.2)
+ magrittr    * 2.0.3   2022-03-30 [1] CRAN (R 4.2.0)
+ munsell       0.5.0   2018-06-12 [2] CRAN (R 4.0.3)
+ pillar        1.9.0   2023-03-22 [1] CRAN (R 4.2.3)
+ pkgconfig     2.0.3   2019-09-22 [2] CRAN (R 4.0.3)
+ purrr         1.0.1   2023-01-10 [1] CRAN (R 4.2.2)
+ R6            2.5.1   2021-08-19 [2] CRAN (R 4.1.1)
+ ragg          1.2.5   2023-01-12 [1] CRAN (R 4.2.2)
+ rlang         1.1.0   2023-03-14 [1] CRAN (R 4.2.2)
+ rmarkdown     2.21    2023-03-26 [1] CRAN (R 4.2.3)
+ rprojroot     2.0.3   2022-04-02 [2] CRAN (R 4.2.0)
+ scales        1.2.1   2022-08-20 [1] CRAN (R 4.2.3)
+ sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+ stringi       1.7.12  2023-01-11 [1] CRAN (R 4.2.2)
+ stringr       1.5.0   2022-12-02 [1] CRAN (R 4.2.3)
+ systemfonts   1.0.4   2022-02-11 [2] CRAN (R 4.2.0)
+ textshaping   0.3.6   2021-10-13 [1] CRAN (R 4.2.2)
+ tibble        3.2.1   2023-03-20 [1] CRAN (R 4.2.3)
+ tictoc        1.1     2022-09-03 [1] CRAN (R 4.2.1)
+ tidyr         1.3.0   2023-01-24 [1] CRAN (R 4.2.3)
+ tidyselect    1.2.0   2022-10-10 [1] CRAN (R 4.2.2)
+ utf8          1.2.3   2023-01-31 [1] CRAN (R 4.2.3)
+ vctrs         0.6.1   2023-03-22 [1] CRAN (R 4.2.3)
+ withr         2.5.0   2022-03-03 [1] CRAN (R 4.2.0)
+ xfun          0.38    2023-03-24 [1] CRAN (R 4.2.3)
+ yaml          2.3.7   2023-01-23 [1] CRAN (R 4.2.3)
+
+ [1] /net/mulan/home/fredboe/R/x86_64-pc-linux-gnu-library/4.0
+ [2] /net/mario/cluster/lib/R/site-library-bionic-40
+ [3] /usr/local/lib/R/site-library
+ [4] /usr/lib/R/site-library
+ [5] /usr/lib/R/library
+
+──────────────────────────────────────────────────────────────────────────────</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># git commit info</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>gr <span class="ot">&lt;-</span> git2r<span class="sc">::</span><span class="fu">repository</span>(here<span class="sc">::</span><span class="fu">here</span>()) <span class="sc">%&gt;%</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    git2r<span class="sc">::</span><span class="fu">commits</span>()</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>gr[[<span class="dv">1</span>]] </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[498fd10] 2023-04-22: feat: added slurm script to submit simple2.qmd rendering</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

@@ -109,20 +109,22 @@ for (n_per_fold in n_per_fold_values){
     
         # go one by one through test set (testing2)
         test_list <- list()
-        for (i in 1:nrow(testing2)) {
+        for (i in 1:nrow(testing2)){
             tt <- testing2[i, ]
             pt2 <- preds_test %>% 
                 dplyr::filter(id == tt$id) %>% # our only use of tt
-                dplyr::rename_with(function(x)paste0("test_", x))
+                dplyr::rename_with(function(x)paste0("test_", x)) 
+                # pt2 contains the five predicted values for a single test subject
+            nrow(pt2) # 5
             preds_all <- preds_training %>%
                 dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
                 dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
-                                test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
+                              test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
             uu <- sort(preds_all$test_fitted_plus_absolute_residual)[plus_index]
             ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
             # make a tibble with exactly one row
             test_list[[i]] <- preds_all %>%
-                dplyr::select(test_id, test_geno, test_pheno) %>%
+                dplyr::select(test_id, test_geno, test_pheno, ) %>%
                 dplyr::mutate(lower = ll, upper = uu) %>%
                 dplyr::distinct()
         }
@@ -149,7 +151,9 @@ tt_intermediate %>%
     dplyr::summarise(mean_interval_width = mean(interval_width),
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
-                    sd_in_interval = sd(in_interval)) %>%
+                    sd_in_interval = sd(in_interval), 
+                    slope_estimate = mean(beta1_hat)
+                    ) %>%
                     knitr::kable() %>%
                     print()
 ```

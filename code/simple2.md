@@ -112,22 +112,28 @@ for (n_per_fold in n_per_fold_values){
     
         # go one by one through test set (testing2)
         test_list <- list()
-        for (i in 1:nrow(testing2)) {
+        for (i in 1:nrow(testing2)){
             tt <- testing2[i, ]
             pt2 <- preds_test %>% 
                 dplyr::filter(id == tt$id) %>% # our only use of tt
-                dplyr::rename_with(function(x)paste0("test_", x))
+                dplyr::rename_with(function(x)paste0("test_", x)) 
+                # pt2 contains the five predicted values for a single test subject
+            nrow(pt2) # 5
             preds_all <- preds_training %>%
                 dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
                 dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
-                                test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
+                              test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
             uu <- sort(preds_all$test_fitted_plus_absolute_residual)[plus_index]
             ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
             # make a tibble with exactly one row
             test_list[[i]] <- preds_all %>%
-                dplyr::select(test_id, test_geno, test_pheno) %>%
+                dplyr::select(test_id, test_geno, test_pheno, test_beta1_hat, fold) %>%
                 dplyr::mutate(lower = ll, upper = uu) %>%
-                dplyr::distinct()
+                dplyr::distinct() %>%
+                tidyr::pivot_wider(names_from = fold, 
+                                    values_from = test_beta1_hat,
+                                    names_prefix = "beta1_hat_fold_"
+                                    )
         }
         test_tib <- test_list %>%
             dplyr::bind_rows() %>%
@@ -142,7 +148,7 @@ for (n_per_fold in n_per_fold_values){
 tictoc::toc() # timing
 ```
 
-    267.361 sec elapsed
+    521.447 sec elapsed
 
 ``` r
 #test_tib_thin <- test_tib %>%
@@ -154,7 +160,13 @@ tt_intermediate %>%
     dplyr::summarise(mean_interval_width = mean(interval_width),
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
-                    sd_in_interval = sd(in_interval)) %>%
+                    sd_in_interval = sd(in_interval), 
+                    beta1_hat_fold_1 = mean(beta1_hat_fold_1),
+                    beta1_hat_fold_2 = mean(beta1_hat_fold_2),
+                    beta1_hat_fold_3 = mean(beta1_hat_fold_3),
+                    beta1_hat_fold_4 = mean(beta1_hat_fold_4),
+                    beta1_hat_fold_5 = mean(beta1_hat_fold_5)
+                    ) %>%
                     knitr::kable() %>%
                     print()
 ```
@@ -162,28 +174,28 @@ tt_intermediate %>%
     `summarise()` has grouped output by 'training_set_size'. You can override using
     the `.groups` argument.
 
-| training_set_size | trait_num | mean_interval_width | sd_interval_width | mean_in_interval | sd_in_interval |
-|------------------:|----------:|--------------------:|------------------:|-----------------:|---------------:|
-|               100 |         1 |            3.353573 |         0.0129964 |            0.919 |      0.2729716 |
-|               100 |         2 |            3.269282 |         0.0311728 |            0.907 |      0.2905778 |
-|               100 |         3 |            3.246337 |         0.0152826 |            0.890 |      0.3130463 |
-|               100 |         4 |            3.229049 |         0.0659925 |            0.901 |      0.2988115 |
-|               100 |         5 |            3.460026 |         0.0038258 |            0.909 |      0.2877530 |
-|               100 |         6 |            3.355759 |         0.0073000 |            0.897 |      0.3041110 |
-|               100 |         7 |            3.980449 |         0.0416188 |            0.952 |      0.2138732 |
-|               100 |         8 |            3.326653 |         0.0074721 |            0.907 |      0.2905778 |
-|               100 |         9 |            3.653136 |         0.0019625 |            0.938 |      0.2412762 |
-|               100 |        10 |            3.561284 |         0.0119700 |            0.917 |      0.2760203 |
-|             10000 |         1 |            3.290953 |         0.0010846 |            0.918 |      0.2745020 |
-|             10000 |         2 |            3.312527 |         0.0020374 |            0.912 |      0.2834367 |
-|             10000 |         3 |            3.320756 |         0.0006827 |            0.904 |      0.2947386 |
-|             10000 |         4 |            3.279787 |         0.0008393 |            0.909 |      0.2877530 |
-|             10000 |         5 |            3.288617 |         0.0002318 |            0.891 |      0.3117952 |
-|             10000 |         6 |            3.291975 |         0.0012743 |            0.888 |      0.3155243 |
-|             10000 |         7 |            3.307993 |         0.0007978 |            0.905 |      0.2933617 |
-|             10000 |         8 |            3.308931 |         0.0010771 |            0.905 |      0.2933617 |
-|             10000 |         9 |            3.274744 |         0.0014894 |            0.906 |      0.2919747 |
-|             10000 |        10 |            3.331720 |         0.0007399 |            0.897 |      0.3041110 |
+| training_set_size | trait_num | mean_interval_width | sd_interval_width | mean_in_interval | sd_in_interval | beta1_hat_fold_1 | beta1_hat_fold_2 | beta1_hat_fold_3 | beta1_hat_fold_4 | beta1_hat_fold_5 |
+|------------------:|----------:|--------------------:|------------------:|-----------------:|---------------:|-----------------:|-----------------:|-----------------:|-----------------:|-----------------:|
+|               100 |         1 |            3.353573 |         0.0129964 |            0.919 |      0.2729716 |        10.139861 |        10.347822 |        10.216658 |        10.283637 |        10.228992 |
+|               100 |         2 |            3.269282 |         0.0311728 |            0.907 |      0.2905778 |        10.029817 |        10.027591 |        10.082244 |        10.032147 |         9.916443 |
+|               100 |         3 |            3.246337 |         0.0152826 |            0.890 |      0.3130463 |        10.233641 |        10.263063 |        10.217109 |        10.313080 |        10.323161 |
+|               100 |         4 |            3.229049 |         0.0659925 |            0.901 |      0.2988115 |        10.335762 |        10.295860 |        10.263683 |        10.117457 |        10.293189 |
+|               100 |         5 |            3.460026 |         0.0038258 |            0.909 |      0.2877530 |         9.997463 |         9.960094 |         9.997248 |        10.019471 |         9.963694 |
+|               100 |         6 |            3.355759 |         0.0073000 |            0.897 |      0.3041110 |        10.018040 |        10.077735 |        10.142020 |         9.990942 |        10.041804 |
+|               100 |         7 |            3.980449 |         0.0416188 |            0.952 |      0.2138732 |        10.003445 |        10.069239 |        10.034488 |        10.196176 |        10.108486 |
+|               100 |         8 |            3.326653 |         0.0074721 |            0.907 |      0.2905778 |        10.113209 |        10.096988 |        10.119445 |        10.129327 |        10.132087 |
+|               100 |         9 |            3.653136 |         0.0019625 |            0.938 |      0.2412762 |         9.985875 |        10.193415 |        10.082621 |        10.138359 |         9.943896 |
+|               100 |        10 |            3.561284 |         0.0119700 |            0.917 |      0.2760203 |         9.969111 |         9.865656 |         9.826659 |         9.741551 |         9.998203 |
+|             10000 |         1 |            3.290953 |         0.0010846 |            0.918 |      0.2745020 |         9.977913 |         9.984978 |         9.990252 |         9.986172 |         9.980599 |
+|             10000 |         2 |            3.312527 |         0.0020374 |            0.912 |      0.2834367 |         9.982828 |         9.974832 |         9.967156 |         9.985279 |         9.985672 |
+|             10000 |         3 |            3.320756 |         0.0006827 |            0.904 |      0.2947386 |         9.982968 |         9.988185 |         9.993088 |         9.996586 |         9.988597 |
+|             10000 |         4 |            3.279787 |         0.0008393 |            0.909 |      0.2877530 |        10.019184 |        10.022152 |        10.013322 |        10.017043 |        10.011324 |
+|             10000 |         5 |            3.288617 |         0.0002318 |            0.891 |      0.3117952 |         9.987089 |         9.981302 |         9.983809 |         9.983244 |         9.982069 |
+|             10000 |         6 |            3.291975 |         0.0012743 |            0.888 |      0.3155243 |         9.992487 |         9.984260 |         9.978471 |         9.968695 |         9.989893 |
+|             10000 |         7 |            3.307993 |         0.0007978 |            0.905 |      0.2933617 |        10.007027 |         9.996307 |        10.003696 |        10.003574 |        10.010460 |
+|             10000 |         8 |            3.308931 |         0.0010771 |            0.905 |      0.2933617 |        10.000219 |        10.007251 |        10.001309 |        10.010352 |         9.991695 |
+|             10000 |         9 |            3.274744 |         0.0014894 |            0.906 |      0.2919747 |        10.000456 |        10.014163 |        10.013602 |        10.021682 |        10.026449 |
+|             10000 |        10 |            3.331720 |         0.0007399 |            0.897 |      0.3041110 |        10.013960 |        10.004986 |        10.006299 |        10.002682 |        10.014836 |
 
 ``` r
 library(ggplot2)
@@ -214,7 +226,7 @@ sessioninfo::session_info()
      collate  en_US.UTF-8
      ctype    en_US.UTF-8
      tz       America/Detroit
-     date     2023-04-20
+     date     2023-04-22
      pandoc   1.19.2.4 @ /usr/bin/ (via rmarkdown)
 
     ─ Packages ───────────────────────────────────────────────────────────────────
@@ -255,6 +267,7 @@ sessioninfo::session_info()
      textshaping   0.3.6   2021-10-13 [1] CRAN (R 4.2.2)
      tibble        3.2.1   2023-03-20 [1] CRAN (R 4.2.3)
      tictoc        1.1     2022-09-03 [1] CRAN (R 4.2.1)
+     tidyr         1.3.0   2023-01-24 [1] CRAN (R 4.2.3)
      tidyselect    1.2.0   2022-10-10 [1] CRAN (R 4.2.2)
      utf8          1.2.3   2023-01-31 [1] CRAN (R 4.2.3)
      vctrs         0.6.1   2023-03-22 [1] CRAN (R 4.2.3)
@@ -277,4 +290,4 @@ gr <- git2r::repository(here::here()) %>%
 gr[[1]] 
 ```
 
-    [ac19bfa] 2023-04-20: fix: added dplyr::ungroup for every call to dplyr::group_by AND fixed ggplot2 figure
+    [4296767] 2023-04-22: fix: finished R code to add beta1hat values to results

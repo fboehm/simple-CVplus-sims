@@ -124,9 +124,13 @@ for (n_per_fold in n_per_fold_values){
             ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
             # make a tibble with exactly one row
             test_list[[i]] <- preds_all %>%
-                dplyr::select(test_id, test_geno, test_pheno, ) %>%
+                dplyr::select(test_id, test_geno, test_pheno, test_beta1_hat, fold) %>%
                 dplyr::mutate(lower = ll, upper = uu) %>%
-                dplyr::distinct()
+                dplyr::distinct() %>%
+                tidyr::pivot_wider(names_from = fold, 
+                                    values_from = test_beta1_hat,
+                                    names_prefix = "beta1_hat_fold_"
+                                    )
         }
         test_tib <- test_list %>%
             dplyr::bind_rows() %>%
@@ -152,7 +156,11 @@ tt_intermediate %>%
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
                     sd_in_interval = sd(in_interval), 
-                    slope_estimate = mean(beta1_hat)
+                    beta1_hat_fold_1 = mean(beta1_hat_fold_1),
+                    beta1_hat_fold_2 = mean(beta1_hat_fold_2),
+                    beta1_hat_fold_3 = mean(beta1_hat_fold_3),
+                    beta1_hat_fold_4 = mean(beta1_hat_fold_4),
+                    beta1_hat_fold_5 = mean(beta1_hat_fold_5)
                     ) %>%
                     knitr::kable() %>%
                     print()

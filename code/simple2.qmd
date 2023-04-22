@@ -162,6 +162,20 @@ tt_intermediate %>%
                     beta1_hat_fold_4 = mean(beta1_hat_fold_4),
                     beta1_hat_fold_5 = mean(beta1_hat_fold_5)
                     ) %>%
+                    dplyr::ungroup() %>%
+                    dplyr::mutate(mean_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
+                                                                        beta1_hat_fold_2, 
+                                                                        beta1_hat_fold_3, 
+                                                                        beta1_hat_fold_4,
+                                                                         beta1_hat_fold_5), 
+                                                           .f = function(x, y, z, w, v) mean(c(x, y, z, w, v))),
+                                    sd_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
+                                                                        beta1_hat_fold_2, 
+                                                                        beta1_hat_fold_3, 
+                                                                        beta1_hat_fold_4,
+                                                                         beta1_hat_fold_5), 
+                                                           .f = function(x, y, z, w, v) sd(c(x, y, z, w, v)))
+                    ) %>%
                     knitr::kable() %>%
                     print()
 ```

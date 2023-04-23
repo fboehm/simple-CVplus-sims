@@ -13,7 +13,7 @@ format:
 
 ## Setup
 
-First, simulate genotype data for 11,000 subjects.
+First, simulate genotype data for 11,000 subjects. Then, for each subject's genotype, simulate replicate traits.
 
 ```{r}
 library(magrittr)
@@ -165,7 +165,7 @@ tictoc::toc() # timing
 #    dplyr::select(test_id, test_geno)
 tt_intermediate <- tl %>%
     dplyr::bind_rows(.id = "id") 
-tt_intermediate %>%
+results <- tt_intermediate %>%
     dplyr::group_by(training_set_size, trait_num) %>%
     dplyr::summarise(mean_interval_width = mean(interval_width),
                     sd_interval_width = sd(interval_width),
@@ -175,7 +175,8 @@ tt_intermediate %>%
                     beta1_hat_fold_2 = mean(beta1_hat_fold_2),
                     beta1_hat_fold_3 = mean(beta1_hat_fold_3),
                     beta1_hat_fold_4 = mean(beta1_hat_fold_4),
-                    beta1_hat_fold_5 = mean(beta1_hat_fold_5)
+                    beta1_hat_fold_5 = mean(beta1_hat_fold_5),
+                    median_interval_width = median(interval_width)
                     ) %>%
                     dplyr::ungroup() %>%
                     dplyr::mutate(mean_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
@@ -190,10 +191,17 @@ tt_intermediate %>%
                                                                         beta1_hat_fold_4,
                                                                          beta1_hat_fold_5), 
                                                            .f = function(x, y, z, w, v) sd(c(x, y, z, w, v)))
-                    ) %>%
-                    knitr::kable() %>%
-                    print()
+                    ) 
+results %>%
+    knitr::kable() %>%
+    print()
+
 ```
+
+
+## Figures
+
+### Boxplots for interval width
 
 ```{r}
 library(ggplot2)
@@ -203,11 +211,14 @@ tt_intermediate %>%
 ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
 ```
 
+### Relationship between $\hat\beta$ and median interval width
 
-
-
-
-
+```{r}
+results %>%
+    ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size))) +
+    geom_point()
+ggsave(here::here("figures", "mean_b1_vs_median_interval_width.png"), width = 10, height = 10)
+```
 
 
 

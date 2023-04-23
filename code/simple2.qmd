@@ -1,5 +1,6 @@
 ---
 title: "Simulations with a single SNP & different sample sizes"
+prefer-html: true
 format:
   gfm:
     toc: true

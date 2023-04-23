@@ -214,10 +214,11 @@ ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height =
 ### Relationship between $\hat\beta$ and median interval width
 
 ```{r}
-results %>%
-    ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size))) +
+p1 <- results %>%
+    ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size), replicate_num = trait_num)) +
     geom_point()
-ggsave(here::here("figures", "mean_b1_vs_median_interval_width.png"), width = 10, height = 10)
+plotly::ggplotly(p1, tooltip = c("x", "y", "colour", "replicate_num"))
+ggsave(p1, here::here("figures", "mean_b1_vs_median_interval_width.png"), width = 10, height = 10)
 ```
 
 

@@ -8,7 +8,10 @@ format:
     toc: true
     number-sections: true
     code-fold: true
+    embed-resources: true
 ---
+
+## Setup
 
 First, simulate genotype data for 11,000 subjects.
 
@@ -153,6 +156,9 @@ for (n_per_fold in n_per_fold_values){
 }
 tictoc::toc() # timing
 ```
+
+## Organize results
+
 
 ```{r, results = "asis"}
 #test_tib_thin <- test_tib %>%

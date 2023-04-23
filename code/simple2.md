@@ -1,8 +1,14 @@
 Simulations with a single SNP & different sample sizes
 ================
 
+- <a href="#setup" id="toc-setup"><span
+  class="toc-section-number">1</span> Setup</a>
+- <a href="#organize-results" id="toc-organize-results"><span
+  class="toc-section-number">2</span> Organize results</a>
 - <a href="#session-info" id="toc-session-info"><span
-  class="toc-section-number">1</span> Session Info</a>
+  class="toc-section-number">3</span> Session Info</a>
+
+## Setup
 
 First, simulate genotype data for 11,000 subjects.
 
@@ -151,7 +157,9 @@ for (n_per_fold in n_per_fold_values){
 tictoc::toc() # timing
 ```
 
-    514.176 sec elapsed
+    534.991 sec elapsed
+
+## Organize results
 
 ``` r
 #test_tib_thin <- test_tib %>%
@@ -307,4 +315,4 @@ gr <- git2r::repository(here::here()) %>%
 gr[[1]] 
 ```
 
-    [6b4f0fd] 2023-04-22: fix: rendered simple2.qmd to html & gfm
+    [9a380a7] 2023-04-23: fix: set embed-resources to true for html output

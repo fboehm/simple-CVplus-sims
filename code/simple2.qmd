@@ -1,13 +1,22 @@
 ---
 title: "Simulations with a single SNP & different sample sizes"
-format: gfm
+format:
+  gfm:
+    toc: true
+    number-sections: true
+  html: 
+    toc: true
+    number-sections: true
+    code-fold: true
 ---
 
-First, simulate genotype data for 10,000 subjects.
+First, simulate genotype data for 11,000 subjects.
 
 ```{r}
 library(magrittr)
 ```
+
+
 
 ```{r}
 set.seed(2023-04-15)

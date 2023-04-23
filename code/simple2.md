@@ -1,7 +1,10 @@
 Simulations with a single SNP & different sample sizes
 ================
 
-First, simulate genotype data for 10,000 subjects.
+- <a href="#session-info" id="toc-session-info"><span
+  class="toc-section-number">1</span> Session Info</a>
+
+First, simulate genotype data for 11,000 subjects.
 
 ``` r
 library(magrittr)
@@ -148,7 +151,7 @@ for (n_per_fold in n_per_fold_values){
 tictoc::toc() # timing
 ```
 
-    629.278 sec elapsed
+    514.176 sec elapsed
 
 ``` r
 #test_tib_thin <- test_tib %>%
@@ -240,7 +243,7 @@ sessioninfo::session_info()
      collate  en_US.UTF-8
      ctype    en_US.UTF-8
      tz       America/Detroit
-     date     2023-04-22
+     date     2023-04-23
      pandoc   1.19.2.4 @ /usr/bin/ (via rmarkdown)
 
     ─ Packages ───────────────────────────────────────────────────────────────────
@@ -304,4 +307,4 @@ gr <- git2r::repository(here::here()) %>%
 gr[[1]] 
 ```
 
-    [498fd10] 2023-04-22: feat: added slurm script to submit simple2.qmd rendering
+    [6b4f0fd] 2023-04-22: fix: rendered simple2.qmd to html & gfm

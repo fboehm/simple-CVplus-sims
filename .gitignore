@@ -1,6 +1,6 @@
 slurm-*.out
 _environment
-
+cluster_outputs
 
 # History files
 .Rhistory

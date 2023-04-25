@@ -14,7 +14,7 @@ format:
 
 ## Setup
 
-First, simulate genotype data for 11,000 subjects. Then, for each subject's genotype, simulate replicate traits.
+First, simulate genotype data. Then, for each subject's genotype, simulate replicate traits.
 
 ```{r}
 library(magrittr)
@@ -24,11 +24,11 @@ library(magrittr)
 
 ```{r}
 set.seed(2023-04-15)
-n_tr <- 100000
-n_te <- 1000
+n_tr <- 1000
+n_te <- 100
 n <- n_tr + n_te
 # n is total number of subjects
-n_reps <- 50
+n_reps <- 10
 # n_reps is number of replicates
 n_snp <- 1
 # n_snp is number of SNPs

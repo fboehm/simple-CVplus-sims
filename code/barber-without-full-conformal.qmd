@@ -28,17 +28,17 @@ def compute_PIs(X,Y,X1,alpha,fit_muh_fun, min_Y, max_Y, run_full_CP=True):
     # Naive & jackknife/jack+/jackmm
     ###############################
     
-    muh_vals = fit_muh_fun(X,Y,np.r_[X,X1])
-    resids_naive = np.abs(Y-muh_vals[:n])
-    muh_vals_testpoint = muh_vals[n:]
-    resids_LOO = np.zeros(n)
-    muh_LOO_vals_testpoint = np.zeros((n,n1))
-    for i in range(n):
-        muh_vals_LOO = fit_muh_fun(np.delete(X,i,0),np.delete(Y,i),\
-                                   np.r_[X[i].reshape((1,-1)),X1])
-        resids_LOO[i] = np.abs(Y[i] - muh_vals_LOO[0])
-        muh_LOO_vals_testpoint[i] = muh_vals_LOO[1:]
-    ind_q = (np.ceil((1-alpha)*(n+1))).astype(int)
+    #muh_vals = fit_muh_fun(X,Y,np.r_[X,X1])
+    #resids_naive = np.abs(Y-muh_vals[:n])
+    #muh_vals_testpoint = muh_vals[n:]
+    #resids_LOO = np.zeros(n)
+    #muh_LOO_vals_testpoint = np.zeros((n,n1))
+    #for i in range(n):
+    #    muh_vals_LOO = fit_muh_fun(np.delete(X,i,0),np.delete(Y,i),\
+    #                               np.r_[X[i].reshape((1,-1)),X1])
+    #    resids_LOO[i] = np.abs(Y[i] - muh_vals_LOO[0])
+    #    muh_LOO_vals_testpoint[i] = muh_vals_LOO[1:]
+    #ind_q = (np.ceil((1-alpha)*(n+1))).astype(int)
 
     ###############################
     # CV+
@@ -153,6 +153,7 @@ for n in n_vals:
 
 
 ```{r}
+# get python objects into my R session
 Xr <- py$X_dic 
 Yr <- py$Y_dic
 X1r <- py$X1

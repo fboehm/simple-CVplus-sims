@@ -24,18 +24,23 @@ library(magrittr)
 
 ```{r}
 set.seed(2023-04-15)
-n <- 101000
-n_traits <- 10
+n_tr <- 100000
+n_te <- 1000
+n <- n_tr + n_te
+# n is total number of subjects
+n_reps <- 50
+# n_reps is number of replicates
 n_snp <- 1
+# n_snp is number of SNPs
 # simulate genotypes matrix
 geno <- matrix(sample(c(0,1,2), n*n_snp, replace=TRUE, prob=c(0.25,0.5,0.25)), nrow=n, ncol=n_snp)
 # simulate phenotype
 beta <- 10
-y <- as.numeric(geno %*% beta) %*% t(rep(1, n_traits)) + matrix(data = rnorm(n * n_traits), nrow = n, ncol = n_traits)
+y <- as.numeric(geno %*% beta) %*% t(rep(1, n_reps)) + 
+    matrix(data = rnorm(n * n_reps), nrow = n, ncol = n_reps)
 # prepare for splitting into training and testing
-n_test <- 1000
 # get test subject ids
-test_ids <- sample(1:n, n_test, replace = FALSE)
+test_ids <- sample(1:n, n_te, replace = FALSE)
 # organize data
 dat <- tibble::as_tibble(y) %>%
     dplyr::rename_with(function(x){ num <- stringr::str_extract(x, "[0-9]+")
@@ -51,37 +56,35 @@ testing2 <- testing %>% dplyr::mutate(fold = as.integer(NA))
 # use all training with leave K out
 alpha <- 0.1
 n_folds <- 5
-n_train <- nrow(training)
 # partition training data into 5 folds
-folds <- split(training$id, sample(rep(1:n_folds, length.out = n_train)))
+folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
 training2_pre <- training %>% 
-    dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x))))
+    dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x)))) %>%
+    dplyr::arrange(fold)
 ```
 
 Above, we specified the number of replicates for the simulations. We created
-`r n_traits` replicate traits for the same `r n` subjects. Note that each 
+`r n_reps` replicate traits for the same `r n` subjects. Note that each 
 subject has only `r n_snp` SNPs. 
 
 
 
 ## python code, adapted from Barber's code for JK+ paper
 
-```{python, eval = FALSE}
+```{python, eval = TRUE}
 def leastsq_minL2(X,Y,X1,tol=1e-8):
     uX,dX,vX = np.linalg.svd(X)
     rX = (dX>=dX[0]*tol).sum()
     betahat = (vX[:rX].T/dX[:rX]).dot(uX[:,:rX].T.dot(Y))
     return X1.dot(betahat)
 
-def compute_PIs(X,Y,X1,alpha = 0.1,fit_muh_fun):
+def compute_PIs(X,Y,X1,alpha = 0.1, K=5, fit_muh_fun = leastsq_minL2):
     n = len(Y)
     #n1 = X1.shape[0]
     n1 = len(X1)
     ###############################
     # CV+
     ###############################
-
-    K = 5
     n_K = np.floor(n/K).astype(int)
     base_inds_to_delete = np.arange(n_K).astype(int)
     resids_LKO = np.zeros(n)
@@ -103,22 +106,21 @@ def compute_PIs(X,Y,X1,alpha = 0.1,fit_muh_fun):
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 ```
 
-```{python, eval = FALSE}
+```{python, eval =TRUE}
 # simulation
-d = 1
 
-method_names = ['CV+']
-n_vals = [10000]
+#method_names = 'CV+'
+#n = 100000
 
-Y_dic = dict.fromkeys(n_vals, 0)
-X_dic = dict.fromkeys(n_vals, 0)
+#Y_dic = dict.fromkeys(n_vals, 0)
+#X_dic = dict.fromkeys(n_vals, 0)
 
 
-for n in n_vals:
-    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
-    Xa = np.zeros((n, ntrial))
-    Ya = np.zeros((n, ntrial))
-    for itrial in range(ntrial):
+#for n in n_vals:
+##    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+#    Xa = np.zeros((n, ntrial))
+#    Ya = np.zeros((n, ntrial))
+#    for itrial in range(ntrial):
         #X = np.random.normal(size=(n,d))
         #Xa[:, itrial] = X
         
@@ -128,20 +130,24 @@ for n in n_vals:
         # store X, Y for later use with R code
         # store as numpy arrays
         
-        PIs = compute_PIs(X,Y,X1,alpha,leastsq_minL2)
-        for method in method_names:
-            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
-            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
-            results.loc[len(results)]=[itrial,d,method,coverage,width]
-    X_dic[n] = Xa
-    Y_dic[n] = Ya
+PIs = compute_PIs(X = r.training2_pre$geno, 
+                            Y = r.training2_pre$pheno1, 
+                            X1 = r.testing2$geno)
+#        for method in method_names:
+#            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+#            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+#            results.loc[len(results)]=[itrial,d,method,coverage,width]
+#    X_dic[n] = Xa
+#    Y_dic[n] = Ya
+```
+
+```{r, get_python_results, eval = TRUE}
+saveRDS(py$PIs, file = "PIs.rds")
 ```
 
 
 
-
-
-```{r}
+```{r, eval = FALSE}
 tictoc::tic() # timing
 tl <- list()
 n_per_fold_values <- c(20000, 2000, 200, 20)
@@ -238,7 +244,7 @@ tictoc::toc() # timing
 ## Organize results
 
 
-```{r, results = "asis"}
+```{r, results = "asis", eval = FALSE}
 #test_tib_thin <- test_tib %>%
 #    dplyr::select(test_id, test_geno)
 tt_intermediate <- tl %>%
@@ -281,7 +287,7 @@ results %>%
 
 ### Boxplots for interval width
 
-```{r}
+```{r, eval = FALSE}
 library(ggplot2)
 tt_intermediate %>%
     ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(trait_num)))  +
@@ -291,7 +297,7 @@ tt_intermediate %>%
 
 ### Relationship between $\hat\beta$ and median interval width
 
-```{r}
+```{r, eval = FALSE}
 p1 <- results %>%
     ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size), replicate_num = trait_num)) +
     geom_point()

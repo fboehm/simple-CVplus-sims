@@ -2,10 +2,12 @@
 #
 #SBATCH --job-name=jkplus
 #SBATCH --partition=mulan,main
-#SBATCH --time=10:00:00
+#SBATCH --time=3:00:00
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
+#SBATCH --mem=64G
 
-quarto render simple2.qmd --to html
+
+conda run -n barber1 quarto render simple2.qmd --to html
 
 

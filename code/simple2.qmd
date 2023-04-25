@@ -68,9 +68,9 @@ Above, we specified the number of replicates for the simulations. We created
 subject has only `r n_snp` SNPs. 
 
 ```{r, prep_for_python}
-gg_train <- training2_pre$geno
-pp_train <- training2_pre$pheno1
-gg_test <- testing2$geno
+gg_train <- training2_pre$geno %>% as.matrix()
+pp_train <- training2_pre$pheno1 %>% as.matrix()
+gg_test <- testing2$geno %>% as.matrix()
 ```
 
 ## python code, adapted from Barber's code for JK+ paper
@@ -98,9 +98,14 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=5, fit_muh_fun = leastsq_minL2):
     muh_LKO_vals_testpoint = np.zeros((n,n1))
     for i in range(K):
         inds_to_delete = (base_inds_to_delete + n_K*i).astype(int)
-        muh_vals_LKO = fit_muh_fun(np.delete(X,inds_to_delete),
-                                    np.delete(Y,inds_to_delete),\
-                                   np.r_[X[inds_to_delete],X1])
+        X0 = np.delete(X, inds_to_delete)
+        X0_2d = X0[:, np.newaxis]
+        Y0 = np.delete(Y, inds_to_delete)
+        X0d = X[inds_to_delete]
+        X0d_2d = X0d[:, np.newaxis]
+        X1_2d = X1[:, np.newaxis]
+        muh_vals_LKO = fit_muh_fun(X0_2d, Y0, 
+                                   np.r_[X0d_2d, X1_2d])
         resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K])
         for inner_K in range(n_K):
             muh_LKO_vals_testpoint[inds_to_delete[inner_K]] = muh_vals_LKO[n_K:]

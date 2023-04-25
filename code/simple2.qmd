@@ -69,7 +69,7 @@ subject has only `r n_snp` SNPs.
 
 ```{r, prep_for_python}
 gg_train <- training2_pre$geno %>% as.matrix()
-pp_train <- training2_pre$pheno1 %>% as.matrix()
+pp_train <- training2_pre$pheno1
 gg_test <- testing2$geno %>% as.matrix()
 ```
 

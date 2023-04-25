@@ -67,11 +67,19 @@ Above, we specified the number of replicates for the simulations. We created
 `r n_reps` replicate traits for the same `r n` subjects. Note that each 
 subject has only `r n_snp` SNPs. 
 
-
+```{r, prep_for_python}
+gg_train <- training2_pre$geno
+pp_train <- training2_pre$pheno1
+gg_test <- testing2$geno
+```
 
 ## python code, adapted from Barber's code for JK+ paper
 
 ```{python, eval = TRUE}
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
 def leastsq_minL2(X,Y,X1,tol=1e-8):
     uX,dX,vX = np.linalg.svd(X)
     rX = (dX>=dX[0]*tol).sum()
@@ -130,9 +138,9 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=5, fit_muh_fun = leastsq_minL2):
         # store X, Y for later use with R code
         # store as numpy arrays
         
-PIs = compute_PIs(X = r.training2_pre$geno, 
-                            Y = r.training2_pre$pheno1, 
-                            X1 = r.testing2$geno)
+PIs = compute_PIs(X = r.gg_train, 
+                            Y = r.pp_train, 
+                            X1 = r.gg_test)
 #        for method in method_names:
 #            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
 #            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()

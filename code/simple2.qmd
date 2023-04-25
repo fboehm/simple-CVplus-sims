@@ -286,7 +286,7 @@ library(ggplot2)
 tt_intermediate %>%
     ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(trait_num)))  +
     geom_boxplot()
-ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
+#ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
 ```
 
 ### Relationship between $\hat\beta$ and median interval width

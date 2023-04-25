@@ -24,7 +24,7 @@ library(magrittr)
 
 ```{r}
 set.seed(2023-04-15)
-n <- 11000
+n <- 101000
 n_traits <- 10
 n_snp <- 1
 # simulate genotypes matrix
@@ -64,10 +64,87 @@ subject has only `r n_snp` SNPs.
 
 
 
+## python code, adapted from Barber's code for JK+ paper
+
+```{python, eval = FALSE}
+def leastsq_minL2(X,Y,X1,tol=1e-8):
+    uX,dX,vX = np.linalg.svd(X)
+    rX = (dX>=dX[0]*tol).sum()
+    betahat = (vX[:rX].T/dX[:rX]).dot(uX[:,:rX].T.dot(Y))
+    return X1.dot(betahat)
+
+def compute_PIs(X,Y,X1,alpha = 0.1,fit_muh_fun):
+    n = len(Y)
+    #n1 = X1.shape[0]
+    n1 = len(X1)
+    ###############################
+    # CV+
+    ###############################
+
+    K = 5
+    n_K = np.floor(n/K).astype(int)
+    base_inds_to_delete = np.arange(n_K).astype(int)
+    resids_LKO = np.zeros(n)
+    muh_LKO_vals_testpoint = np.zeros((n,n1))
+    for i in range(K):
+        inds_to_delete = (base_inds_to_delete + n_K*i).astype(int)
+        muh_vals_LKO = fit_muh_fun(np.delete(X,inds_to_delete),
+                                    np.delete(Y,inds_to_delete),\
+                                   np.r_[X[inds_to_delete],X1])
+        resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K])
+        for inner_K in range(n_K):
+            muh_LKO_vals_testpoint[inds_to_delete[inner_K]] = muh_vals_LKO[n_K:]
+    ind_Kq = (np.ceil((1-alpha)*(n+1))).astype(int)
+    PIs_dict = {'CV+' : pd.DataFrame(\
+                    np.c_[np.sort(muh_LKO_vals_testpoint.T - resids_LKO,axis=1).T[-ind_Kq], \
+                        np.sort(muh_LKO_vals_testpoint.T + resids_LKO,axis=1).T[ind_Kq-1]],\
+                           columns = ['lower','upper'])}
+
+    return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
+```
+
+```{python, eval = FALSE}
+# simulation
+d = 1
+
+method_names = ['CV+']
+n_vals = [10000]
+
+Y_dic = dict.fromkeys(n_vals, 0)
+X_dic = dict.fromkeys(n_vals, 0)
+
+
+for n in n_vals:
+    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+    Xa = np.zeros((n, ntrial))
+    Ya = np.zeros((n, ntrial))
+    for itrial in range(ntrial):
+        #X = np.random.normal(size=(n,d))
+        #Xa[:, itrial] = X
+        
+        #Y = X.dot(beta) + np.random.normal(size=n)
+        #Ya[:, itrial] = Y
+        
+        # store X, Y for later use with R code
+        # store as numpy arrays
+        
+        PIs = compute_PIs(X,Y,X1,alpha,leastsq_minL2)
+        for method in method_names:
+            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+            results.loc[len(results)]=[itrial,d,method,coverage,width]
+    X_dic[n] = Xa
+    Y_dic[n] = Ya
+```
+
+
+
+
+
 ```{r}
 tictoc::tic() # timing
 tl <- list()
-n_per_fold_values <- c(2000, 20)
+n_per_fold_values <- c(20000, 2000, 200, 20)
 for (n_per_fold in n_per_fold_values){
     training2 <- training2_pre %>%
         dplyr::group_by(fold) %>%

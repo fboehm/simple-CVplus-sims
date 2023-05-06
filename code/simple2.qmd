@@ -24,7 +24,7 @@ library(magrittr)
 
 ```{r}
 set.seed(2023-04-15)
-n_tr <- 1000
+n_tr <- 10000
 n_te <- 100
 n <- n_tr + n_te
 # n is total number of subjects
@@ -55,7 +55,7 @@ testing <- dat %>% dplyr::filter(in_test_set)
 testing2 <- testing %>% dplyr::mutate(fold = as.integer(NA))
 # use all training with leave K out
 alpha <- 0.1
-n_folds <- 5
+n_folds <- 10
 # partition training data into 5 folds
 folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
 training2_pre <- training %>% 
@@ -65,7 +65,7 @@ training2_pre <- training %>%
 
 Above, we specified the number of replicates for the simulations. We created
 `r n_reps` replicate traits for the same `r n` subjects. Note that each 
-subject has only `r n_snp` SNPs. 
+subject has only `r n_snp` SNP(s). 
 
 ```{r, prep_for_python}
 gg_train <- training2_pre$geno %>% as.matrix()
@@ -85,7 +85,7 @@ def leastsq_minL2(X,Y,X1,tol=1e-8):
     betahat = (vX[:rX].T/dX[:rX]).dot(uX[:,:rX].T.dot(Y))
     return X1.dot(betahat)
 
-def compute_PIs(X,Y,X1,alpha = 0.1, K=5, fit_muh_fun = leastsq_minL2):
+def compute_PIs(X,Y,X1,alpha = 0.1, K=10, fit_muh_fun = leastsq_minL2):
     n = len(Y)
     #n1 = X1.shape[0]
     n1 = len(X1)
@@ -104,53 +104,55 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=5, fit_muh_fun = leastsq_minL2):
         X0d = X[inds_to_delete]
         X0d_2d = X0d[:, np.newaxis]
         X1_2d = X1[:, np.newaxis]
-        muh_vals_LKO = fit_muh_fun(X0_2d, Y0, 
-                                   np.r_[X0d_2d, X1_2d])
-        resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K])
+        muh_vals_LKO = fit_muh_fun(X0_2d, Y0, np.r_[X0d_2d, X1_2d])
+        resids_LKO[inds_to_delete] = np.abs(Y[inds_to_delete] - muh_vals_LKO[:n_K, 0])
         for inner_K in range(n_K):
-            muh_LKO_vals_testpoint[inds_to_delete[inner_K]] = muh_vals_LKO[n_K:]
+            muh_LKO_vals_testpoint[inds_to_delete[inner_K]] = muh_vals_LKO[n_K:, 0]
     ind_Kq = (np.ceil((1-alpha)*(n+1))).astype(int)
     PIs_dict = {'CV+' : pd.DataFrame(\
                     np.c_[np.sort(muh_LKO_vals_testpoint.T - resids_LKO,axis=1).T[-ind_Kq], \
                         np.sort(muh_LKO_vals_testpoint.T + resids_LKO,axis=1).T[ind_Kq-1]],\
                            columns = ['lower','upper'])}
-
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 ```
 
 ```{python, eval =TRUE}
 # simulation
-
-#method_names = 'CV+'
-#n = 100000
-
-#Y_dic = dict.fromkeys(n_vals, 0)
-#X_dic = dict.fromkeys(n_vals, 0)
-
-
+# simulation
+n_vals = np.array([100, 1000, 10000, 100000]) # training set size
+n1 = 100 # test set size
+SNR = 10
+ntrial = 50
+alpha = 0.1
+#dim_vals = np.arange(5,205,5)
+d = 1
+beta = np.random.normal(size=d)
+beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
+X1 = np.random.normal(size=(n1,d))
+Y1 = X1.dot(beta) + np.random.normal(size=n1)
+method = 'CV+'
+# define new objects for storing Y and X
+Y_dic = dict.fromkeys(n_vals, 0)
+X_dic = dict.fromkeys(n_vals, 0)
+# loop over n_vals
 #for n in n_vals:
-##    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
-#    Xa = np.zeros((n, ntrial))
-#    Ya = np.zeros((n, ntrial))
-#    for itrial in range(ntrial):
-        #X = np.random.normal(size=(n,d))
-        #Xa[:, itrial] = X
-        
-        #Y = X.dot(beta) + np.random.normal(size=n)
-        #Ya[:, itrial] = Y
-        
-        # store X, Y for later use with R code
-        # store as numpy arrays
-        
-PIs = compute_PIs(X = r.gg_train, 
-                            Y = r.pp_train, 
-                            X1 = r.gg_test)
-#        for method in method_names:
-#            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
-#            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
-#            results.loc[len(results)]=[itrial,d,method,coverage,width]
-#    X_dic[n] = Xa
-#    Y_dic[n] = Ya
+n=1000
+results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+Xa = np.zeros((n, ntrial))
+Ya = np.zeros((n, ntrial))
+for itrial in range(ntrial):
+    X = np.random.normal(size=(n,d))
+    Xa[:, itrial] = X[:,0]
+    Y = X.dot(beta) + np.random.normal(size=n)
+    Ya[:, itrial] = Y
+    # store X, Y for later use with R code
+    # store as numpy arrays
+    PIs = compute_PIs(X = X, Y = Y, X1 = X1)
+    coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+    width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+    results.loc[len(results)]=[itrial,d,method,coverage,width]
+X_dic[n] = Xa
+Y_dic[n] = Ya
 ```
 
 ```{r, get_python_results, eval = TRUE}
@@ -162,7 +164,7 @@ saveRDS(py$PIs, file = "PIs.rds")
 ```{r, eval = FALSE}
 tictoc::tic() # timing
 tl <- list()
-n_per_fold_values <- c(20000, 2000, 200, 20)
+n_per_fold_values <- c(n_tr / n_folds, n_tr / (n_folds * 10))
 for (n_per_fold in n_per_fold_values){
     training2 <- training2_pre %>%
         dplyr::group_by(fold) %>%
@@ -171,7 +173,7 @@ for (n_per_fold in n_per_fold_values){
     # store each trait's outputs
     out <- list()
     # loop over traits
-    for (trait_num in 1:n_traits){
+    for (trait_num in 1:n_reps){
         tr2_one_trait <- training2 %>%
             dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
             dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
@@ -181,13 +183,14 @@ for (n_per_fold in n_per_fold_values){
         
         # regress leaving one fold out
         preds <- list()
+        vars <- list()
         for (fold_num in 1:n_folds) {
             # get training data
             train <- tr2_one_trait %>% dplyr::filter(fold != fold_num)
             # get testing data
             test <- tr2_one_trait %>% dplyr::filter(fold == fold_num)
             # fit model
-            fit <- lm(pheno ~ geno, data = train)
+            fit <- lm(pheno ~ 1 + geno, data = train)
             # predict
             foo <- test %>% dplyr::bind_rows(te2_one_trait)
             foo$pred <- predict(fit, newdata = foo)
@@ -200,6 +203,9 @@ for (n_per_fold in n_per_fold_values){
                 )
             # save predictions
             preds[[fold_num]] <- result
+            te_geno_mat <- cbind(1, te2_one_trait$geno)
+            tr_geno_mat <- cbind(1, train$geno)
+            vars[[fold_num]] <- diag(te_geno_mat %*% solve(t(tr_geno_mat) %*% tr_geno_mat) %*% t(te_geno_mat))
         }
         # assemble predicted values
         # get absolute residuals

@@ -1,6 +1,8 @@
 slurm-*.out
 _environment
 cluster_outputs
+.vscode
+
 
 # History files
 .Rhistory

@@ -135,24 +135,23 @@ method = 'CV+'
 Y_dic = dict.fromkeys(n_vals, 0)
 X_dic = dict.fromkeys(n_vals, 0)
 # loop over n_vals
-#for n in n_vals:
-n=1000
-results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
-Xa = np.zeros((n, ntrial))
-Ya = np.zeros((n, ntrial))
-for itrial in range(ntrial):
-    X = np.random.normal(size=(n,d))
-    Xa[:, itrial] = X[:,0]
-    Y = X.dot(beta) + np.random.normal(size=n)
-    Ya[:, itrial] = Y
-    # store X, Y for later use with R code
-    # store as numpy arrays
-    PIs = compute_PIs(X = X, Y = Y, X1 = X1)
-    coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
-    width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
-    results.loc[len(results)]=[itrial,d,method,coverage,width]
-X_dic[n] = Xa
-Y_dic[n] = Ya
+for n in n_vals:
+    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
+    Xa = np.zeros((n, ntrial))
+    Ya = np.zeros((n, ntrial))
+    for itrial in range(ntrial):
+        X = np.random.normal(size=(n,d))
+        Xa[:, itrial] = X[:,0]
+        Y = X.dot(beta) + np.random.normal(size=n)
+        Ya[:, itrial] = Y
+        # store X, Y for later use with R code
+        # store as numpy arrays
+        PIs = compute_PIs(X = X, Y = Y, X1 = X1)
+        coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+        width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+        results.loc[len(results)]=[itrial,d,method,coverage,width]
+    X_dic[n] = Xa
+    Y_dic[n] = Ya
 ```
 
 ```{r, get_python_results, eval = TRUE}

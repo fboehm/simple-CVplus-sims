@@ -106,7 +106,7 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=10, fit_muh_fun = leastsq_minL2):
 ```
 
 ```{python, eval = FALSE}
-# simulation
+np.random.seed(98765)
 # simulation
 n_vals = np.array([100, 1000, 10000, 100000]) # training set size
 n1 = 100 # test set size
@@ -115,9 +115,12 @@ ntrial = 50
 alpha = 0.1
 #dim_vals = np.arange(5,205,5)
 d = 1
-beta = np.random.normal(size=d)
-beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
-X1 = np.random.normal(size=(n1,d))
+#beta = np.random.normal(size=d)
+#beta = beta/np.sqrt((beta**2).sum()) * np.sqrt(SNR)
+beta = np.array([1])
+#X1 = np.random.normal(size=(n1,d))
+vector = [0, 1, 2]
+X1 = np.random.choice(vector, size=(n1, d), replace=True)
 Y1 = X1.dot(beta) + np.random.normal(size=n1)
 method = 'CV+'
 # define new objects for storing Y and X
@@ -129,7 +132,8 @@ for n in n_vals:
     Xa = np.zeros((n, ntrial))
     Ya = np.zeros((n, ntrial))
     for itrial in range(ntrial):
-        X = np.random.normal(size=(n,d))
+#        X = np.random.normal(size=(n,d))
+        X = np.random.choice(vector, size=(n, d), replace=True)
         Xa[:, itrial] = X[:,0]
         Y = X.dot(beta) + np.random.normal(size=n)
         Ya[:, itrial] = Y

@@ -61,11 +61,6 @@ Above, we specified the number of replicates for the simulations. We created
 `r n_reps` replicate traits for the same `r n` subjects. Note that each 
 subject has only `r n_snp` SNP(s). 
 
-```{r, prep_for_python}
-gg_train <- training2_pre$geno %>% as.matrix()
-pp_train <- training2_pre$pheno1
-gg_test <- testing2$geno %>% as.matrix()
-```
 
 ## python code, adapted from Barber's code for JK+ paper
 

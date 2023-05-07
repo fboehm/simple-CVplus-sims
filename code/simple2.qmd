@@ -151,7 +151,7 @@ saveRDS(py$PIs, file = "PIs.rds")
 
 ```{r, eval = TRUE}
 res_list <- list()
-vars_list_list_list() <- list()
+vars_list_list_list <- list()
 n_folds_vec <- c(5, 10, 20, 50)
 for (n_folds in n_folds_vec){
     # partition training data into K folds

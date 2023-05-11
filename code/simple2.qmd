@@ -275,6 +275,7 @@ saveRDS(vars_list_list_list, "vars_list_list_list.rds")
 ```{r, results = "asis", eval = TRUE}
 #test_tib_thin <- test_tib %>%
 #    dplyr::select(test_id, test_geno)
+# need to accommodate varying number of beta1_hat_fold_* columns
 tt_intermediate <- tl %>%
     dplyr::bind_rows(.id = "id") 
 results <- tt_intermediate %>%
@@ -283,27 +284,27 @@ results <- tt_intermediate %>%
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
                     sd_in_interval = sd(in_interval), 
-                    beta1_hat_fold_1 = mean(beta1_hat_fold_1),
-                    beta1_hat_fold_2 = mean(beta1_hat_fold_2),
-                    beta1_hat_fold_3 = mean(beta1_hat_fold_3),
-                    beta1_hat_fold_4 = mean(beta1_hat_fold_4),
-                    beta1_hat_fold_5 = mean(beta1_hat_fold_5),
+                    #beta1_hat_fold_1 = mean(beta1_hat_fold_1),
+                    #beta1_hat_fold_2 = mean(beta1_hat_fold_2),
+                    #beta1_hat_fold_3 = mean(beta1_hat_fold_3),
+                    #beta1_hat_fold_4 = mean(beta1_hat_fold_4),
+                    #beta1_hat_fold_5 = mean(beta1_hat_fold_5),
                     median_interval_width = median(interval_width)
                     ) %>%
                     dplyr::ungroup() %>%
-                    dplyr::mutate(mean_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
-                                                                        beta1_hat_fold_2, 
-                                                                        beta1_hat_fold_3, 
-                                                                        beta1_hat_fold_4,
-                                                                         beta1_hat_fold_5), 
-                                                           .f = function(x, y, z, w, v) mean(c(x, y, z, w, v))),
-                                    sd_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
-                                                                        beta1_hat_fold_2, 
-                                                                        beta1_hat_fold_3, 
-                                                                        beta1_hat_fold_4,
-                                                                         beta1_hat_fold_5), 
-                                                           .f = function(x, y, z, w, v) sd(c(x, y, z, w, v)))
-                    ) 
+           #         dplyr::mutate(mean_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
+           #                                                             beta1_hat_fold_2, 
+           #                                                             beta1_hat_fold_3, 
+           #                                                             beta1_hat_fold_4,
+           #                                                              beta1_hat_fold_5), 
+           #                                                .f = function(x, y, z, w, v) mean(c(x, y, z, w, v))),
+           #                         sd_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
+           #                                                             beta1_hat_fold_2, 
+           #                                                             beta1_hat_fold_3, 
+           #                                                             beta1_hat_fold_4,
+           #                                                              beta1_hat_fold_5), 
+           #                                                .f = function(x, y, z, w, v) sd(c(x, y, z, w, v)))
+           #         ) 
 results %>%
     knitr::kable() %>%
     print()

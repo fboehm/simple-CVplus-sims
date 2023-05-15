@@ -124,7 +124,7 @@ Y1 = X1.dot(beta) + np.random.normal(size=n1)
 method = 'CV+'
 # define new objects for storing Y and X
 Y_dic = dict.fromkeys(n_vals, 0)
-results = pd.DataFrame(columns = ['itrial','d','method','coverage','width', 'n'])
+results = pd.DataFrame(columns = ['itrial','d','method','coverage','width', 'n', 'K'])
 K_vec = np.array([10, 20, 50])
 # loop over n_vals
 for n in n_vals:

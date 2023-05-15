@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=cvplus
+#SBATCH --job-name=simple2
 #SBATCH --partition=mulan,main
 #SBATCH --time=3:00:00
 #SBATCH --ntasks=1

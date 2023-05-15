@@ -105,12 +105,12 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=10, fit_muh_fun = leastsq_minL2):
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 ```
 
-```{python, eval = FALSE}
+```{python, eval = TRUE}
 np.random.seed(98765)
 # simulation
-n_vals = np.array([100, 1000, 10000, 100000]) # training set size
+n_vals = np.array([100, 1000, 10000]) # training set size
 n1 = 100 # test set size
-SNR = 10
+#SNR = 10
 ntrial = 50
 alpha = 0.1
 #dim_vals = np.arange(5,205,5)
@@ -125,16 +125,12 @@ Y1 = X1.dot(beta) + np.random.normal(size=n1)
 method = 'CV+'
 # define new objects for storing Y and X
 Y_dic = dict.fromkeys(n_vals, 0)
-X_dic = dict.fromkeys(n_vals, 0)
+results = pd.DataFrame(columns = ['itrial','d','method','coverage','width', 'n'])
 # loop over n_vals
 for n in n_vals:
-    results = pd.DataFrame(columns = ['itrial','d','method','coverage','width'])
-    Xa = np.zeros((n, ntrial))
     Ya = np.zeros((n, ntrial))
+    X = np.random.choice(vector, size=(n, d), replace=True)
     for itrial in range(ntrial):
-#        X = np.random.normal(size=(n,d))
-        X = np.random.choice(vector, size=(n, d), replace=True)
-        Xa[:, itrial] = X[:,0]
         Y = X.dot(beta) + np.random.normal(size=n)
         Ya[:, itrial] = Y
         # store X, Y for later use with R code
@@ -142,18 +138,17 @@ for n in n_vals:
         PIs = compute_PIs(X = X, Y = Y, X1 = X1)
         coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
         width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
-        results.loc[len(results)]=[itrial,d,method,coverage,width]
-    X_dic[n] = Xa
+        results.loc[len(results)]=[itrial,d,method,coverage,width,n]
     Y_dic[n] = Ya
 ```
 
-```{r, get_python_results, eval = FALSE}
-saveRDS(py$PIs, file = "PIs.rds")
+```{r, get_python_results, eval = TRUE}
+saveRDS(py$results, file = "python-results.rds")
 ```
 
 
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 res_list <- list()
 vars_list_list_list <- list()
 n_folds_vec <- c(5, 10, 20, 50)
@@ -272,7 +267,7 @@ saveRDS(vars_list_list_list, "vars_list_list_list.rds")
 ## Organize results
 
 
-```{r, results = "asis", eval = TRUE}
+```{r, results = "asis", eval = FALSE}
 #test_tib_thin <- test_tib %>%
 #    dplyr::select(test_id, test_geno)
 # need to accommodate varying number of beta1_hat_fold_* columns
@@ -316,7 +311,7 @@ results %>%
 
 ### Boxplots for interval width
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 library(ggplot2)
 tt_intermediate %>%
     ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(trait_num)))  +
@@ -326,7 +321,7 @@ tt_intermediate %>%
 
 ### Relationship between $\hat\beta$ and median interval width
 
-```{r, eval = TRUE}
+```{r, eval = FALSE}
 p1 <- results %>%
     ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size), replicate_num = trait_num)) +
     geom_point()

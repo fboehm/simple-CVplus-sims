@@ -139,11 +139,19 @@ for n in n_vals:
         coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
         width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
         results.loc[len(results)]=[itrial,d,method,coverage,width,n]
-    Y_dic[n] = Ya
+results.to_csv('python-results.csv')
 ```
 
 ```{r, get_python_results, eval = TRUE}
+library(reticulate)
 saveRDS(py$results, file = "python-results.rds")
+library(ggplot2)
+p <- py$results %>%
+    ggplot() + geom_boxplot(aes(x = as.factor(n), y = width, fill = as.factor(n)))
+plotly::ggplotly(p)
+```
+
+```{r, eval = TRUE}
 ```
 
 

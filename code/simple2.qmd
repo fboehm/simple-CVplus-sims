@@ -108,11 +108,10 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=10, fit_muh_fun = leastsq_minL2):
 ```{python, eval = TRUE}
 np.random.seed(98765)
 # simulation
-n_vals = np.array([100, 1000, 10000]) # training set size
+n_vals = np.array([100, 1000, 10000, 100000]) # training set size
 n1 = 100 # test set size
 #SNR = 10
 ntrial = 50
-alpha = 0.1
 #dim_vals = np.arange(5,205,5)
 d = 1
 #beta = np.random.normal(size=d)
@@ -126,6 +125,7 @@ method = 'CV+'
 # define new objects for storing Y and X
 Y_dic = dict.fromkeys(n_vals, 0)
 results = pd.DataFrame(columns = ['itrial','d','method','coverage','width', 'n'])
+K_vec = np.array([10, 20, 50])
 # loop over n_vals
 for n in n_vals:
     Ya = np.zeros((n, ntrial))
@@ -135,10 +135,11 @@ for n in n_vals:
         Ya[:, itrial] = Y
         # store X, Y for later use with R code
         # store as numpy arrays
-        PIs = compute_PIs(X = X, Y = Y, X1 = X1)
-        coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
-        width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
-        results.loc[len(results)]=[itrial,d,method,coverage,width,n]
+        for K in K_vec:
+            PIs = compute_PIs(X = X, Y = Y, X1 = X1, K = K)
+            coverage = ((PIs[method]['lower'] <= Y1)&(PIs[method]['upper'] >= Y1)).mean()
+            width = (PIs[method]['upper'] - PIs[method]['lower']).mean()
+            results.loc[len(results)]=[itrial,d,method,coverage,width,n,K]
 results.to_csv('python-results.csv')
 ```
 
@@ -151,7 +152,12 @@ p <- py$results %>%
 plotly::ggplotly(p)
 ```
 
-```{r, eval = TRUE}
+```{r, eval = TRUE, results = 'asis'}
+py$results %>%
+    tibble::as_tibble() %>%
+    dplyr::group_by(n) %>%
+    dplyr::summarize(mean_width = mean(width), sd_width = sd(width)) %>%
+    knitr::kable()
 ```
 
 

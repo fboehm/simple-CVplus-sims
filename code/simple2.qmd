@@ -33,26 +33,37 @@ n_reps <- 50
 n_snp <- 1
 # n_snp is number of SNPs
 # simulate genotypes matrix
-geno <- matrix(sample(c(0,1,2), n*n_snp, replace=TRUE, prob=c(0.25,0.5,0.25)), nrow=n, ncol=n_snp)
+maf <- 0.5
+geno <- matrix(sample(c(0,1,2), 
+                        n*n_snp, 
+                        replace=TRUE, 
+                        prob=c(maf^2,2 * maf * (1-maf), (1-maf)^2)), 
+                nrow=n, 
+                ncol=n_snp)
 # simulate phenotype
 beta <- 1
-y <- as.numeric(geno %*% beta) %*% t(rep(1, n_reps)) + 
-    matrix(data = rnorm(n * n_reps), nrow = n, ncol = n_reps)
-# prepare for splitting into training and testing
-# get test subject ids
-test_ids <- sample(1:n, n_te, replace = FALSE)
-# organize data
-dat <- tibble::as_tibble(y) %>%
-    dplyr::rename_with(function(x){ num <- stringr::str_extract(x, "[0-9]+")
-                                    return(paste0("pheno", num))}
-                        ) %>%
-    dplyr::bind_cols(geno %>% tibble::as_tibble() %>% dplyr::rename(geno = 1)) %>%
-    dplyr::mutate(id = 1:n) %>% # fix this when using more than one SNP
-    dplyr::mutate(in_test_set = id %in% test_ids)
-# split into training and testing
-training <- dat %>% dplyr::filter(!in_test_set)
-testing <- dat %>% dplyr::filter(in_test_set)
-testing2 <- testing %>% dplyr::mutate(fold = as.integer(NA))
+pheno_list <- list()
+error_vars <- c(0.5, 1, 2, 4.5)
+for (error_var in error_vars){
+    error_term <- matrix(data = rnorm(n * n_reps, sd = sqrt(error_var)))
+    y <- as.numeric(geno %*% beta) %*% t(rep(1, n_reps)) + error_term
+    # prepare for splitting into training and testing
+    # get test subject ids
+    test_ids <- sample(1:n, n_te, replace = FALSE)
+    # organize data
+    dat <- tibble::as_tibble(y) %>%
+        dplyr::rename_with(function(x){ num <- stringr::str_extract(x, "[0-9]+")
+                                        return(paste0("pheno", num))}
+                            ) %>%
+        dplyr::bind_cols(geno %>% tibble::as_tibble() %>% dplyr::rename(geno = 1)) %>%
+        dplyr::mutate(id = 1:n) %>% # fix this when using more than one SNP
+        dplyr::mutate(in_test_set = id %in% test_ids)
+    # split into training and testing
+    training <- dat %>% dplyr::filter(!in_test_set)
+    testing <- dat %>% dplyr::filter(in_test_set)
+    testing2 <- testing %>% dplyr::mutate(fold = as.integer(NA))
+    pheno_list[[as.character(error_var)]] <- list(training, testing2)
+}
 # use all training with leave K out
 alpha <- 0.1
 ```
@@ -105,7 +116,7 @@ def compute_PIs(X,Y,X1,alpha = 0.1, K=10, fit_muh_fun = leastsq_minL2):
     return pd.concat(PIs_dict.values(), axis=1, keys=PIs_dict.keys())
 ```
 
-```{python, eval = TRUE}
+```{python, eval = FALSE}
 np.random.seed(98765)
 # simulation
 n_vals = np.array([100, 1000, 10000, 100000]) # training set size
@@ -143,7 +154,7 @@ for n in n_vals:
 results.to_csv('python-results.csv')
 ```
 
-```{r, get_python_results, eval = TRUE}
+```{r, get_python_results, eval = FALSE}
 library(reticulate)
 saveRDS(py$results, file = "python-results.rds")
 library(ggplot2)
@@ -152,22 +163,25 @@ p <- py$results %>%
 plotly::ggplotly(p)
 ```
 
-```{r, eval = TRUE, results = 'asis'}
+```{r, eval = FALSE, results = 'asis'}
 py$results %>%
     tibble::as_tibble() %>%
     dplyr::group_by(n) %>%
     dplyr::summarize(mean_width = mean(width), sd_width = sd(width)) %>%
     knitr::kable()
 ```
+## Back to R-based analysis
 
-
-
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 res_list <- list()
-vars_list_list_list <- list()
+outermost_list <- list()
 n_folds_vec <- c(5, 10, 20, 50)
-for (n_folds in n_folds_vec){
+n_folds <- 10
+for (error_var in error_vars){
+#for (n_folds in n_folds_vec){
     # partition training data into K folds
+    training <- pheno_list[[as.character(error_var)]]$training
+    testing2 <- pheno_list[[as.character(error_var)]]$testing2
     folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
     training2_pre <- training %>% 
         dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x)))) %>%
@@ -270,12 +284,13 @@ for (n_folds in n_folds_vec){
         tl[[as.character(n_per_fold * n_folds)]]  <- out
         vars_list_list[[as.character(n_per_fold * n_folds)]] <- vars_list
     }
-    res_list[[as.character(n_folds)]] <- tl
-    vars_list_list_list[[as.character(n_folds)]] <- vars_list_list
+    res_list[[as.character(error_var)]] <- tl
+    outermost_list[[as.character(error_var)]] <- vars_list_list
     tictoc::toc() # timing
+#}
 }
 saveRDS(res_list, "res_list.rds")
-saveRDS(vars_list_list_list, "vars_list_list_list.rds")
+saveRDS(outermost_list, "outermost_list.rds")
 ```
 
 ## Organize results

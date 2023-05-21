@@ -45,7 +45,9 @@ beta <- 1
 pheno_list <- list()
 error_vars <- c(0.5, 1, 2, 4.5)
 for (error_var in error_vars){
-    error_term <- matrix(data = rnorm(n * n_reps, sd = sqrt(error_var)))
+    error_term <- matrix(data = rnorm(n * n_reps, sd = sqrt(error_var)), 
+                        nrow = n, 
+                        ncol = n_reps)
     y <- as.numeric(geno %*% beta) %*% t(rep(1, n_reps)) + error_term
     # prepare for splitting into training and testing
     # get test subject ids
@@ -180,8 +182,8 @@ n_folds <- 10
 for (error_var in error_vars){
 #for (n_folds in n_folds_vec){
     # partition training data into K folds
-    training <- pheno_list[[as.character(error_var)]]$training
-    testing2 <- pheno_list[[as.character(error_var)]]$testing2
+    training <- pheno_list[[as.character(error_var)]][[1]]
+    testing2 <- pheno_list[[as.character(error_var)]][[2]]
     folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
     training2_pre <- training %>% 
         dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x)))) %>%

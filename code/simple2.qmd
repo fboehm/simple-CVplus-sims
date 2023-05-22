@@ -331,10 +331,12 @@ results %>%
 
 ```{r, eval = TRUE}
 library(ggplot2)
-modified_list2 %>%
+p1 <- modified_list2 %>%
     ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(list_name)))  +
     geom_boxplot()
+p1
 ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
+plotly::ggplotly(p1, tooltip = c("x", "y", "colour"))
 ```
 
 ### Relationship between $\hat\beta$ and median interval width

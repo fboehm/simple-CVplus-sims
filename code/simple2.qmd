@@ -336,7 +336,7 @@ p1 <- modified_list2 %>%
     geom_boxplot()
 p1
 ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
-plotly::ggplotly(p1, tooltip = c("x", "y", "colour"))
+
 ```
 
 ### Relationship between $\hat\beta$ and median interval width

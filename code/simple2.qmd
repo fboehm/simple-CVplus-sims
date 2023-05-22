@@ -299,38 +299,22 @@ saveRDS(outermost_list, "outermost_list.rds")
 
 
 ```{r, results = "asis", eval = FALSE}
-#test_tib_thin <- test_tib %>%
-#    dplyr::select(test_id, test_geno)
-# need to accommodate varying number of beta1_hat_fold_* columns
-tt_intermediate <- tl %>%
-    dplyr::bind_rows(.id = "id") 
-results <- tt_intermediate %>%
-    dplyr::group_by(training_set_size, trait_num) %>%
+modified_list <- res_list %>%
+    purrr::map(~ .x %>% 
+                    dplyr::bind_rows(.id = "id")) 
+modified_list2 <- lapply(names(modified_list), function(name) {
+  transform(modified_list[[name]], list_name = name)
+}) %>%
+    dplyr::bind_rows()
+
+results <- modified_list2 %>%
+    dplyr::group_by(list_name, training_set_size, trait_num) %>%
     dplyr::summarise(mean_interval_width = mean(interval_width),
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
                     sd_in_interval = sd(in_interval), 
-                    #beta1_hat_fold_1 = mean(beta1_hat_fold_1),
-                    #beta1_hat_fold_2 = mean(beta1_hat_fold_2),
-                    #beta1_hat_fold_3 = mean(beta1_hat_fold_3),
-                    #beta1_hat_fold_4 = mean(beta1_hat_fold_4),
-                    #beta1_hat_fold_5 = mean(beta1_hat_fold_5),
                     median_interval_width = median(interval_width)
-                    ) %>%
-                    dplyr::ungroup() %>%
-           #         dplyr::mutate(mean_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
-           #                                                             beta1_hat_fold_2, 
-           #                                                             beta1_hat_fold_3, 
-           #                                                             beta1_hat_fold_4,
-           #                                                              beta1_hat_fold_5), 
-           #                                                .f = function(x, y, z, w, v) mean(c(x, y, z, w, v))),
-           #                         sd_b1 = purrr::pmap_dbl(.l = list(beta1_hat_fold_1,
-           #                                                             beta1_hat_fold_2, 
-           #                                                             beta1_hat_fold_3, 
-           #                                                             beta1_hat_fold_4,
-           #                                                              beta1_hat_fold_5), 
-           #                                                .f = function(x, y, z, w, v) sd(c(x, y, z, w, v)))
-           #         ) 
+                    )  
 results %>%
     knitr::kable() %>%
     print()
@@ -344,10 +328,10 @@ results %>%
 
 ```{r, eval = FALSE}
 library(ggplot2)
-tt_intermediate %>%
-    ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(trait_num)))  +
+modified_list2 %>%
+    ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(list_name)))  +
     geom_boxplot()
-#ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
+ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height = 10)
 ```
 
 ### Relationship between $\hat\beta$ and median interval width

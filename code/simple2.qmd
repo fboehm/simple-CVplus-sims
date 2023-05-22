@@ -175,130 +175,133 @@ py$results %>%
 ## Back to R-based analysis
 
 ```{r, eval = TRUE}
-res_list <- list()
-outermost_list <- list()
-n_folds_vec <- c(5, 10, 20, 50)
-n_folds <- 10
-for (error_var in error_vars){
-#for (n_folds in n_folds_vec){
-    # partition training data into K folds
-    training <- pheno_list[[as.character(error_var)]][[1]]
-    testing2 <- pheno_list[[as.character(error_var)]][[2]]
-    folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
-    training2_pre <- training %>% 
-        dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x)))) %>%
-        dplyr::arrange(fold)
-    tictoc::tic() # timing
-    tl <- list()
-    n_per_fold_vec <- c(n_tr / n_folds, n_tr / (n_folds * 10))
-    vars_list_list <- list()
-    for (n_per_fold in n_per_fold_vec){
-        training2 <- training2_pre %>%
-            dplyr::group_by(fold) %>%
-            dplyr::slice_sample(n = n_per_fold) %>%
-            dplyr::ungroup()
-        # store each trait's outputs
-        out <- list()
-        vars_list <- list()
-        # loop over traits
-        for (trait_num in 1:n_reps){
-            tr2_one_trait <- training2 %>%
-                dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
-                dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
-            te2_one_trait <- testing2 %>%
-                dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
-                dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
+if (!file.exists("res_list.rds") | !file.exists("outermost_list.rds")){
+    res_list <- list()
+    outermost_list <- list()
+    n_folds_vec <- c(5, 10, 20, 50)
+    n_folds <- 10
+    for (error_var in error_vars){
+    #for (n_folds in n_folds_vec){
+        # partition training data into K folds
+        training <- pheno_list[[as.character(error_var)]][[1]]
+        testing2 <- pheno_list[[as.character(error_var)]][[2]]
+        folds <- split(training$id, sample(rep(1:n_folds, length.out = n_tr)))
+        training2_pre <- training %>% 
+            dplyr::mutate(fold = id %>% purrr::map_int(~which(sapply(folds, function(x) . %in% x)))) %>%
+            dplyr::arrange(fold)
+        tictoc::tic() # timing
+        tl <- list()
+        n_per_fold_vec <- c(n_tr / n_folds, n_tr / (n_folds * 10))
+        vars_list_list <- list()
+        for (n_per_fold in n_per_fold_vec){
+            training2 <- training2_pre %>%
+                dplyr::group_by(fold) %>%
+                dplyr::slice_sample(n = n_per_fold) %>%
+                dplyr::ungroup()
+            # store each trait's outputs
+            out <- list()
+            vars_list <- list()
+            # loop over traits
+            for (trait_num in 1:n_reps){
+                tr2_one_trait <- training2 %>%
+                    dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
+                    dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
+                te2_one_trait <- testing2 %>%
+                    dplyr::select(id, fold, geno, tidyselect::ends_with(paste0("pheno", trait_num))) %>%
+                    dplyr::rename(pheno = tidyselect::ends_with(paste0("pheno", trait_num)))
+                
+                # regress leaving one fold out
+                preds <- list()
+                vars <- list()
+                for (fold_num in 1:n_folds) {
+                    # get training data
+                    train <- tr2_one_trait %>% dplyr::filter(fold != fold_num)
+                    # get testing data
+                    test <- tr2_one_trait %>% dplyr::filter(fold == fold_num)
+                    # fit model
+                    fit <- lm(pheno ~ 1 + geno, data = train)
+                    # predict
+                    foo <- test %>% dplyr::bind_rows(te2_one_trait)
+                    foo$pred <- predict(fit, newdata = foo)
+                    foo$fold_left_out <- fold_num
+                    result <- foo %>%
+                        dplyr::mutate(beta1_hat = coef(fit)[2],
+                                    beta0_hat = coef(fit)[1],
+                                    se_beta1_hat = summary(fit)$coefficients[2, 2],
+                                    se_beta0_hat = summary(fit)$coefficients[1, 2]
+                        )
+                    # save predictions
+                    preds[[fold_num]] <- result
+                    te_geno_mat <- cbind(1, te2_one_trait$geno)
+                    tr_geno_mat <- cbind(1, train$geno)
+                    vars[[fold_num]] <- diag(te_geno_mat %*% solve(t(tr_geno_mat) %*% tr_geno_mat) %*% t(te_geno_mat))
+                }
+                vars_list[[trait_num]] <- vars
+                # assemble predicted values
+                # get absolute residuals
+                preds_training <- preds %>%
+                    dplyr::bind_rows() %>%
+                    dplyr::filter(!is.na(fold)) %>% # keep only training data
+                    dplyr::mutate(absolute_residual = abs(pheno - pred)) %>%
+                    dplyr::select( - fold_left_out)
+                preds_test <- preds %>%
+                    dplyr::bind_rows() %>%
+                    dplyr::filter(is.na(fold))
+                # get indexes
+                plus_index <- ceiling((1 - alpha) * (nrow(preds_training) + 1))
+                minus_index <- floor(alpha * (nrow(preds_training) + 1))
             
-            # regress leaving one fold out
-            preds <- list()
-            vars <- list()
-            for (fold_num in 1:n_folds) {
-                # get training data
-                train <- tr2_one_trait %>% dplyr::filter(fold != fold_num)
-                # get testing data
-                test <- tr2_one_trait %>% dplyr::filter(fold == fold_num)
-                # fit model
-                fit <- lm(pheno ~ 1 + geno, data = train)
-                # predict
-                foo <- test %>% dplyr::bind_rows(te2_one_trait)
-                foo$pred <- predict(fit, newdata = foo)
-                foo$fold_left_out <- fold_num
-                result <- foo %>%
-                    dplyr::mutate(beta1_hat = coef(fit)[2],
-                                beta0_hat = coef(fit)[1],
-                                se_beta1_hat = summary(fit)$coefficients[2, 2],
-                                se_beta0_hat = summary(fit)$coefficients[1, 2]
-                    )
-                # save predictions
-                preds[[fold_num]] <- result
-                te_geno_mat <- cbind(1, te2_one_trait$geno)
-                tr_geno_mat <- cbind(1, train$geno)
-                vars[[fold_num]] <- diag(te_geno_mat %*% solve(t(tr_geno_mat) %*% tr_geno_mat) %*% t(te_geno_mat))
+                # go one by one through test set (testing2)
+                test_list <- list()
+                for (i in 1:nrow(testing2)){
+                    tt <- testing2[i, ]
+                    pt2 <- preds_test %>% 
+                        dplyr::filter(id == tt$id) %>% # our only use of tt
+                        dplyr::rename_with(function(x)paste0("test_", x)) 
+                        # pt2 contains the five predicted values for a single test subject
+                    nrow(pt2) # 5
+                    preds_all <- preds_training %>%
+                        dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
+                        dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
+                                    test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
+                    uu <- sort(preds_all$test_fitted_plus_absolute_residual)[plus_index]
+                    ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
+                    # make a tibble with exactly one row
+                    test_list[[i]] <- preds_all %>%
+                        dplyr::select(test_id, test_geno, test_pheno, test_beta1_hat, fold) %>%
+                        dplyr::mutate(lower = ll, upper = uu) %>%
+                        dplyr::distinct() %>%
+                        tidyr::pivot_wider(names_from = fold, 
+                                            values_from = test_beta1_hat,
+                                            names_prefix = "beta1_hat_fold_"
+                                            )
+                }
+                test_tib <- test_list %>%
+                    dplyr::bind_rows() %>%
+                    dplyr::mutate(in_interval = test_pheno >= lower & test_pheno <= upper) %>%
+                    dplyr::mutate(interval_width = upper - lower) %>%
+                    dplyr::mutate(training_set_size = n_per_fold * n_folds,
+                                    trait_num = trait_num)
+                out[[trait_num]] <- test_tib
             }
-            vars_list[[trait_num]] <- vars
-            # assemble predicted values
-            # get absolute residuals
-            preds_training <- preds %>%
-                dplyr::bind_rows() %>%
-                dplyr::filter(!is.na(fold)) %>% # keep only training data
-                dplyr::mutate(absolute_residual = abs(pheno - pred)) %>%
-                dplyr::select( - fold_left_out)
-            preds_test <- preds %>%
-                dplyr::bind_rows() %>%
-                dplyr::filter(is.na(fold))
-            # get indexes
-            plus_index <- ceiling((1 - alpha) * (nrow(preds_training) + 1))
-            minus_index <- floor(alpha * (nrow(preds_training) + 1))
-        
-            # go one by one through test set (testing2)
-            test_list <- list()
-            for (i in 1:nrow(testing2)){
-                tt <- testing2[i, ]
-                pt2 <- preds_test %>% 
-                    dplyr::filter(id == tt$id) %>% # our only use of tt
-                    dplyr::rename_with(function(x)paste0("test_", x)) 
-                    # pt2 contains the five predicted values for a single test subject
-                nrow(pt2) # 5
-                preds_all <- preds_training %>%
-                    dplyr::left_join(pt2, by = c("fold" = "test_fold_left_out")) %>%
-                    dplyr::mutate(test_fitted_plus_absolute_residual = test_pred + absolute_residual, 
-                                test_fitted_minus_absolute_residual = test_pred - absolute_residual) 
-                uu <- sort(preds_all$test_fitted_plus_absolute_residual)[plus_index]
-                ll <- sort(preds_all$test_fitted_minus_absolute_residual)[minus_index]
-                # make a tibble with exactly one row
-                test_list[[i]] <- preds_all %>%
-                    dplyr::select(test_id, test_geno, test_pheno, test_beta1_hat, fold) %>%
-                    dplyr::mutate(lower = ll, upper = uu) %>%
-                    dplyr::distinct() %>%
-                    tidyr::pivot_wider(names_from = fold, 
-                                        values_from = test_beta1_hat,
-                                        names_prefix = "beta1_hat_fold_"
-                                        )
-            }
-            test_tib <- test_list %>%
-                dplyr::bind_rows() %>%
-                dplyr::mutate(in_interval = test_pheno >= lower & test_pheno <= upper) %>%
-                dplyr::mutate(interval_width = upper - lower) %>%
-                dplyr::mutate(training_set_size = n_per_fold * n_folds,
-                                trait_num = trait_num)
-            out[[trait_num]] <- test_tib
+            tl[[as.character(n_per_fold * n_folds)]]  <- out
+            vars_list_list[[as.character(n_per_fold * n_folds)]] <- vars_list
         }
-        tl[[as.character(n_per_fold * n_folds)]]  <- out
-        vars_list_list[[as.character(n_per_fold * n_folds)]] <- vars_list
+        res_list[[as.character(error_var)]] <- tl
+        outermost_list[[as.character(error_var)]] <- vars_list_list
+        tictoc::toc() # timing
     }
-    res_list[[as.character(error_var)]] <- tl
-    outermost_list[[as.character(error_var)]] <- vars_list_list
-    tictoc::toc() # timing
-#}
+    saveRDS(res_list, "res_list.rds")
+    saveRDS(outermost_list, "outermost_list.rds")
 }
-saveRDS(res_list, "res_list.rds")
-saveRDS(outermost_list, "outermost_list.rds")
+readRDS("res_list.rds") -> res_list
+readRDS("outermost_list.rds") -> outermost_list
 ```
 
 ## Organize results
 
 
-```{r, results = "asis", eval = FALSE}
+```{r, results = "asis", eval = TRUE}
 modified_list <- res_list %>%
     purrr::map(~ .x %>% 
                     dplyr::bind_rows(.id = "id")) 
@@ -308,7 +311,7 @@ modified_list2 <- lapply(names(modified_list), function(name) {
     dplyr::bind_rows()
 
 results <- modified_list2 %>%
-    dplyr::group_by(list_name, training_set_size, trait_num) %>%
+    dplyr::group_by(list_name, training_set_size) %>%
     dplyr::summarise(mean_interval_width = mean(interval_width),
                     sd_interval_width = sd(interval_width),
                     mean_in_interval = mean(in_interval),
@@ -326,7 +329,7 @@ results %>%
 
 ### Boxplots for interval width
 
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 library(ggplot2)
 modified_list2 %>%
     ggplot(aes(y = interval_width, colour = as.factor(training_set_size), x = as.factor(list_name)))  +
@@ -338,9 +341,10 @@ ggsave(here::here("figures", "interval_width_boxplot.png"), width = 10, height =
 
 ```{r, eval = FALSE}
 p1 <- results %>%
-    ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(training_set_size), replicate_num = trait_num)) +
+    ggplot(aes(x = mean_b1, y = median_interval_width, colour = as.factor(list_name), replicate_num = trait_num, training_set_size = training_set_size)) +
     geom_point()
-plotly::ggplotly(p1, tooltip = c("x", "y", "colour", "replicate_num"))
+plotly::ggplotly(p1, tooltip = c("x", "y", "colour", "replicate_num", "training_set_size"))
+
 ```
 
 
